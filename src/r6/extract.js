@@ -22,6 +22,9 @@ export function rankedRecord(board) {
     winPct: games ? (p.wins / games) * 100 : 0,
     rankPoints: p.rank_points || 0,
     maxRankPoints: p.max_rank_points || 0,
+    kills: p.kills || 0,
+    deaths: p.deaths || 0,
+    kd: p.deaths ? p.kills / p.deaths : p.kills,
   };
 }
 

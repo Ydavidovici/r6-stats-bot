@@ -29,6 +29,9 @@ describe("rankedRecord", () => {
     expect(rec.rankPoints).toBe(4586);
     expect(rec.maxRankPoints).toBe(4857);
     expect(rec.winPct).toBeCloseTo(78.77, 1);
+    expect(rec.kills).toBe(1427);
+    expect(rec.deaths).toBe(697);
+    expect(rec.kd).toBeCloseTo(2.047, 3);
   });
   test("null board -> null", () => {
     expect(rankedRecord(null)).toBeNull();

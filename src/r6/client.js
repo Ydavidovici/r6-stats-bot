@@ -3,7 +3,14 @@ import { getCache, setCache } from "../db/repo.js";
 
 const { R6Client } = pkg;
 
-export const CACHE_TTL_MS = 5 * 60 * 1000;
+// r6data.com free tier is ~5k calls/month, so cache aggressively.
+const RANKED_TTL_MINUTES = Number(process.env.CACHE_TTL_MIN) || 15;
+
+export const TTL_RANKED_STATS = RANKED_TTL_MINUTES * 60 * 1000;      // 15-min default (fast changing RP/record)
+export const TTL_SEASONAL_STATS = RANKED_TTL_MINUTES * 60 * 1000;    // 15-min default
+export const TTL_BAN_STATUS = 24 * 60 * 60 * 1000;                  // 24 hours
+export const TTL_ACCOUNT_INFO = 7 * 24 * 60 * 60 * 1000;             // 7 days (avatar, level, etc.)
+export const TTL_OPERATOR_STATS = 7 * 24 * 60 * 60 * 1000;           // 7 days (all-time operators)
 
 let client = null;
 function getClient() {
@@ -18,7 +25,7 @@ function getClient() {
 const norm = (s) => String(s).trim().toLowerCase();
 
 // Read-through cache. Returns { data, fetchedAt, cached }.
-async function cached(key, fetcher, { force = false } = {}) {
+async function cached(key, fetcher, ttlMs, { force = false } = {}) {
   if (!force) {
     const hit = getCache(key);
     if (hit) {
@@ -27,7 +34,7 @@ async function cached(key, fetcher, { force = false } = {}) {
   }
   const data = await fetcher();
   const fetchedAt = Date.now();
-  setCache(key, JSON.stringify(data), CACHE_TTL_MS);
+  setCache(key, JSON.stringify(data), ttlMs);
   return { data, fetchedAt, cached: false };
 }
 
@@ -35,6 +42,7 @@ export function accountInfo(name, platformType, opts) {
   return cached(
     `account:${platformType}:${norm(name)}`,
     () => getClient().players.getAccountInfo({ nameOnPlatform: name, platformType }),
+    TTL_ACCOUNT_INFO,
     opts
   );
 }
@@ -43,6 +51,7 @@ export function isBanned(name, platformType, opts) {
   return cached(
     `ban:${platformType}:${norm(name)}`,
     () => getClient().players.getIsBanned({ nameOnPlatform: name, platformType }),
+    TTL_BAN_STATUS,
     opts
   );
 }
@@ -58,6 +67,7 @@ export function playerStats(name, platformType, platformFamilies, { board = "ran
         platform_families: platformFamilies,
         board_id: board,
       }),
+    TTL_RANKED_STATS,
     opts
   );
 }
@@ -66,6 +76,7 @@ export function seasonalStats(name, platformType, opts) {
   return cached(
     `seasonal:${platformType}:${norm(name)}`,
     () => getClient().players.getSeasonalStats({ nameOnPlatform: name, platformType }),
+    TTL_SEASONAL_STATS,
     opts
   );
 }
@@ -74,6 +85,7 @@ export function operatorStats(name, platformType, modes = "ranked", opts) {
   return cached(
     `operators:${platformType}:${modes}:${norm(name)}`,
     () => getClient().players.getOperatorStats({ nameOnPlatform: name, platformType, modes }),
+    TTL_OPERATOR_STATS,
     opts
   );
 }

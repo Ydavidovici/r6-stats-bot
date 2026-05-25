@@ -13,11 +13,10 @@ export async function execute(interaction) {
   if (t.error) return interaction.reply({ content: t.error, flags: MessageFlags.Ephemeral });
 
   await interaction.deferReply();
-  const [stats, ops, seasonal, account] = await Promise.all([
+  const [stats, seasonal, account] = await Promise.all([
     r6.settle(r6.playerStats(t.nameOnPlatform, t.platformType, t.platformFamilies)),
-    r6.settle(r6.operatorStats(t.nameOnPlatform, t.platformType, "ranked")),
     r6.settle(r6.seasonalStats(t.nameOnPlatform, t.platformType)),
     r6.settle(r6.accountInfo(t.nameOnPlatform, t.platformType)),
   ]);
-  await interaction.editReply({ embeds: [buildStatsEmbed(t, { stats, ops, seasonal, account })] });
+  await interaction.editReply({ embeds: [buildStatsEmbed(t, { stats, seasonal, account })] });
 }

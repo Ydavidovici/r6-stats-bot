@@ -42,8 +42,9 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
   if (!agg.hasData && !rec) return notFoundEmbed(target);
 
   const name = playerName(target, acc);
-  const t = agg.total;
-  const fetchedAt = Math.min(stats?.fetchedAt ?? Date.now(), ops?.fetchedAt ?? Date.now());
+  const fetchedAt = ops
+    ? Math.min(stats?.fetchedAt ?? Date.now(), ops?.fetchedAt ?? Date.now())
+    : (stats?.fetchedAt ?? Date.now());
 
   const embed = new EmbedBuilder()
     .setColor(tier?.color || DEFAULT_COLOR)
@@ -75,6 +76,7 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
   }
 
   if (agg.hasData) {
+    const t = agg.total;
     embed.addFields(
       { name: "K/D", value: `**${fmtKd(t.kd)}**\n${fmtNum(t.kills)} / ${fmtNum(t.deaths)}`, inline: true },
       { name: "Headshot %", value: fmtPct(t.hsPercent, 1), inline: true },
@@ -97,6 +99,11 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
       { name: "Playtime (ranked)", value: fmtHoursFromMs(t.timePlayedMs), inline: true }
     );
     embed.setDescription("_Combat/entry/clutch numbers are all-time ranked; rank & record are the current season._");
+  } else if (rec) {
+    embed.addFields(
+      { name: "K/D (current season)", value: `**${fmtKd(rec.kd)}**\n${fmtNum(rec.kills)} / ${fmtNum(rec.deaths)}`, inline: true }
+    );
+    embed.setDescription("_Showing ranked statistics for the current season._");
   }
 
   return footer(embed, fetchedAt);
@@ -112,7 +119,6 @@ export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
   if (!rec && !tier) return notFoundEmbed(target);
 
   const name = playerName(target, acc);
-  const t = agg.total;
   const fetchedAt = Math.min(stats?.fetchedAt ?? Date.now(), seasonal?.fetchedAt ?? Date.now());
 
   const embed = new EmbedBuilder()
@@ -139,10 +145,17 @@ export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
   );
 
   if (agg.hasData) {
+    const t = agg.total;
     embed.addFields(
       { name: "K/D (all-time)", value: fmtKd(t.kd), inline: true },
       { name: "Entry diff", value: signed(t.entryDiff), inline: true },
       { name: "Clutch %", value: fmtPct(t.clutchWinPercent), inline: true }
+    );
+  } else if (rec) {
+    embed.addFields(
+      { name: "K/D (season)", value: fmtKd(rec.kd), inline: true },
+      { name: "Kills (season)", value: fmtNum(rec.kills), inline: true },
+      { name: "Deaths (season)", value: fmtNum(rec.deaths), inline: true }
     );
   }
 

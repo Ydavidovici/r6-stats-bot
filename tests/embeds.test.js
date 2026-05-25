@@ -95,4 +95,29 @@ describe("buildRankedEmbed", () => {
     expect(fieldByName(e, "Tier").value).toContain("Champion");
     expect(fieldByName(e, "Peak RP").value).toBe("4,857");
   });
+
+  test("seasonal fallback when ops is not provided", () => {
+    const e = buildRankedEmbed(target, {
+      stats: sources.stats,
+      seasonal: sources.seasonal,
+    }).toJSON();
+    expect(fieldByName(e, "K/D (season)").value).toBe("2.05");
+    expect(fieldByName(e, "Kills (season)").value).toBe("1,427");
+    expect(fieldByName(e, "Deaths (season)").value).toBe("697");
+    expect(fieldByName(e, "K/D (all-time)")).toBeUndefined();
+  });
+});
+
+describe("buildStatsEmbed seasonal fallback", () => {
+  test("displays seasonal K/D and omits all-time operator stats", () => {
+    const e = buildStatsEmbed(target, {
+      stats: sources.stats,
+      seasonal: sources.seasonal,
+      account: sources.account,
+    }).toJSON();
+    expect(fieldByName(e, "K/D (current season)").value).toContain("2.05");
+    expect(fieldByName(e, "K/D (current season)").value).toContain("1,427 / 697");
+    expect(fieldByName(e, "K/D")).toBeUndefined();
+    expect(fieldByName(e, "Entry (FB / FD)")).toBeUndefined();
+  });
 });

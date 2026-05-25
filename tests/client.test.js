@@ -21,12 +21,28 @@ class FakeClient {
       lastStatsParams = params;
       return { board: params.board_id, name: params.nameOnPlatform };
     },
+    getIsBanned: async () => ({ isBanned: false }),
+    getSeasonalStats: async () => ({ history: { data: [] } }),
+    getOperatorStats: async () => ({ operators: [] }),
   };
 }
 
 mock.module("r6-data.js", () => ({ default: { R6Client: FakeClient }, R6Client: FakeClient }));
 
-const { accountInfo, playerStats, settle } = await import("../src/r6/client.js");
+const {
+  accountInfo,
+  playerStats,
+  seasonalStats,
+  operatorStats,
+  isBanned,
+  settle,
+  TTL_RANKED_STATS,
+  TTL_SEASONAL_STATS,
+  TTL_BAN_STATUS,
+  TTL_ACCOUNT_INFO,
+  TTL_OPERATOR_STATS,
+} = await import("../src/r6/client.js");
+import { getDb } from "../src/db/index.js";
 
 beforeAll(() => {
   process.env.R6DATA_API_KEY = "test-key";
@@ -78,5 +94,34 @@ describe("settle", () => {
   test("resolves value, swallows rejection to null", async () => {
     expect(await settle(Promise.resolve(7))).toBe(7);
     expect(await settle(Promise.reject(new Error("boom")))).toBeNull();
+  });
+});
+
+describe("distinct cache TTLs per endpoint", () => {
+  test("writes varying expires_at based on endpoint custom TTLs", async () => {
+    // 1. accountInfo (7 days)
+    await accountInfo("ttl-acc", "uplay");
+    const accRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("account:uplay:ttl-acc");
+    expect(accRow.expires_at - accRow.fetched_at).toBe(TTL_ACCOUNT_INFO);
+
+    // 2. isBanned (24 hours)
+    await isBanned("ttl-ban", "uplay");
+    const banRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("ban:uplay:ttl-ban");
+    expect(banRow.expires_at - banRow.fetched_at).toBe(TTL_BAN_STATUS);
+
+    // 3. playerStats (15 mins)
+    await playerStats("ttl-stats", "uplay", "pc");
+    const statsRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("stats:uplay:pc:ranked:ttl-stats");
+    expect(statsRow.expires_at - statsRow.fetched_at).toBe(TTL_RANKED_STATS);
+
+    // 4. seasonalStats (15 mins)
+    await seasonalStats("ttl-seasonal", "uplay");
+    const seasonalRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("seasonal:uplay:ttl-seasonal");
+    expect(seasonalRow.expires_at - seasonalRow.fetched_at).toBe(TTL_SEASONAL_STATS);
+
+    // 5. operatorStats (7 days)
+    await operatorStats("ttl-ops", "uplay");
+    const opsRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("operators:uplay:ranked:ttl-ops");
+    expect(opsRow.expires_at - opsRow.fetched_at).toBe(TTL_OPERATOR_STATS);
   });
 });
