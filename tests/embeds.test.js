@@ -38,8 +38,11 @@ describe("buildStatsEmbed", () => {
   });
   test("combat / entry / clutch from operators", () => {
     expect(fieldByName(e, "K/D").value).toContain("1.90");
-    expect(fieldByName(e, "Entry (FB / FD)").value).toContain("798 / 351");
-    expect(fieldByName(e, "Entry (FB / FD)").value).toContain("+447");
+    expect(fieldByName(e, "K/D").value).toContain("6,389 / 3,364 (+3,025)");
+    expect(fieldByName(e, "Side Splits").value).toContain("1.83");
+    expect(fieldByName(e, "Side Splits").value).toContain("1.97");
+    expect(fieldByName(e, "Entry (First Kill / Death)").value).toContain("2.27");
+    expect(fieldByName(e, "Entry (First Kill / Death)").value).toContain("798 / 351 (+447)");
     expect(fieldByName(e, "Clutches").value).toContain("34%");
   });
 });
@@ -67,8 +70,10 @@ describe("buildBanEmbed", () => {
 describe("buildOperatorsEmbed", () => {
   test("table with header and Ash", () => {
     const e = buildOperatorsEmbed(target, { ops: sources.ops, account: sources.account }).toJSON();
-    expect(e.description).toContain("Operator");
-    expect(e.description).toContain("Ash");
+    const entryField = e.fields.find((f) => f.name.includes("Attacker — Entry"));
+    expect(entryField).toBeDefined();
+    expect(entryField.value).toContain("Operator");
+    expect(entryField.value).toContain("Ash");
   });
 });
 
@@ -94,6 +99,14 @@ describe("buildRankedEmbed", () => {
     }).toJSON();
     expect(fieldByName(e, "Tier").value).toContain("Champion");
     expect(fieldByName(e, "Peak RP").value).toBe("4,857");
+    expect(fieldByName(e, "K/D (season)").value).toContain("2.05");
+    expect(fieldByName(e, "K/D (season)").value).toContain("1,427 / 697 (+730)");
+    expect(fieldByName(e, "K/D (all-time)").value).toContain("1.90");
+    expect(fieldByName(e, "K/D (all-time)").value).toContain("6,389 / 3,364 (+3,025)");
+    expect(fieldByName(e, "Side Splits").value).toContain("1.83");
+    expect(fieldByName(e, "Side Splits").value).toContain("1.97");
+    expect(fieldByName(e, "Entry K/D").value).toContain("2.27");
+    expect(fieldByName(e, "Entry K/D").value).toContain("798 / 351 (+447)");
   });
 
   test("seasonal fallback when ops is not provided", () => {
@@ -101,9 +114,8 @@ describe("buildRankedEmbed", () => {
       stats: sources.stats,
       seasonal: sources.seasonal,
     }).toJSON();
-    expect(fieldByName(e, "K/D (season)").value).toBe("2.05");
-    expect(fieldByName(e, "Kills (season)").value).toBe("1,427");
-    expect(fieldByName(e, "Deaths (season)").value).toBe("697");
+    expect(fieldByName(e, "K/D (season)").value).toContain("2.05");
+    expect(fieldByName(e, "K/D (season)").value).toContain("1,427 / 697 (+730)");
     expect(fieldByName(e, "K/D (all-time)")).toBeUndefined();
   });
 });
@@ -116,8 +128,8 @@ describe("buildStatsEmbed seasonal fallback", () => {
       account: sources.account,
     }).toJSON();
     expect(fieldByName(e, "K/D (current season)").value).toContain("2.05");
-    expect(fieldByName(e, "K/D (current season)").value).toContain("1,427 / 697");
+    expect(fieldByName(e, "K/D (current season)").value).toContain("1,427 / 697 (+730)");
     expect(fieldByName(e, "K/D")).toBeUndefined();
-    expect(fieldByName(e, "Entry (FB / FD)")).toBeUndefined();
+    expect(fieldByName(e, "Entry (First Kill / Death)")).toBeUndefined();
   });
 });

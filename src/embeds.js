@@ -78,12 +78,13 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
   if (agg.hasData) {
     const t = agg.total;
     embed.addFields(
-      { name: "K/D", value: `**${fmtKd(t.kd)}**\n${fmtNum(t.kills)} / ${fmtNum(t.deaths)}`, inline: true },
+      { name: "K/D", value: `**${fmtKd(t.kd)}**\n${fmtNum(t.kills)} / ${fmtNum(t.deaths)} (${signed(t.kills - t.deaths)})`, inline: true },
+      { name: "Side Splits", value: `⚔️ **${fmtKd(agg.attacker.kd)}** KD · **${fmtPct(agg.attacker.winPct)}** WR\n(${fmtNum(agg.attacker.kills)}/${fmtNum(agg.attacker.deaths)})\n🛡️ **${fmtKd(agg.defender.kd)}** KD · **${fmtPct(agg.defender.winPct)}** WR\n(${fmtNum(agg.defender.kills)}/${fmtNum(agg.defender.deaths)})`, inline: true },
       { name: "Headshot %", value: fmtPct(t.hsPercent, 1), inline: true },
       { name: "Kills / round", value: fmtKd(t.killsPerRound), inline: true },
       {
-        name: "Entry (FB / FD)",
-        value: `${fmtNum(t.firstBloods)} / ${fmtNum(t.firstDeaths)}\n${signed(t.entryDiff)} diff`,
+        name: "Entry (First Kill / Death)",
+        value: `**${fmtKd(t.entryKd)}**\n${fmtNum(t.firstBloods)} / ${fmtNum(t.firstDeaths)} (${signed(t.entryDiff)})`,
         inline: true,
       },
       {
@@ -101,7 +102,7 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
     embed.setDescription("_Combat/entry/clutch numbers are all-time ranked; rank & record are the current season._");
   } else if (rec) {
     embed.addFields(
-      { name: "K/D (current season)", value: `**${fmtKd(rec.kd)}**\n${fmtNum(rec.kills)} / ${fmtNum(rec.deaths)}`, inline: true }
+      { name: "K/D (current season)", value: `**${fmtKd(rec.kd)}**\n${fmtNum(rec.kills)} / ${fmtNum(rec.deaths)} (${signed(rec.kills - rec.deaths)})`, inline: true }
     );
     embed.setDescription("_Showing ranked statistics for the current season._");
   }
@@ -146,20 +147,134 @@ export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
 
   if (agg.hasData) {
     const t = agg.total;
-    embed.addFields(
-      { name: "K/D (all-time)", value: fmtKd(t.kd), inline: true },
-      { name: "Entry diff", value: signed(t.entryDiff), inline: true },
-      { name: "Clutch %", value: fmtPct(t.clutchWinPercent), inline: true }
-    );
+    if (rec) {
+      embed.addFields(
+        { name: "K/D (season)", value: `**${fmtKd(rec.kd)}**\n${fmtNum(rec.kills)} / ${fmtNum(rec.deaths)} (${signed(rec.kills - rec.deaths)})`, inline: true },
+        { name: "K/D (all-time)", value: `**${fmtKd(t.kd)}**\n${fmtNum(t.kills)} / ${fmtNum(t.deaths)} (${signed(t.kills - t.deaths)})`, inline: true },
+        { name: "Side Splits", value: `⚔️ **${fmtKd(agg.attacker.kd)}** KD · **${fmtPct(agg.attacker.winPct)}** WR\n(${fmtNum(agg.attacker.kills)}/${fmtNum(agg.attacker.deaths)})\n🛡️ **${fmtKd(agg.defender.kd)}** KD · **${fmtPct(agg.defender.winPct)}** WR\n(${fmtNum(agg.defender.kills)}/${fmtNum(agg.defender.deaths)})`, inline: true },
+        { name: "Entry K/D", value: `**${fmtKd(t.entryKd)}**\n${fmtNum(t.firstBloods)} / ${fmtNum(t.firstDeaths)} (${signed(t.entryDiff)})`, inline: true },
+        { name: "Clutch %", value: fmtPct(t.clutchWinPercent), inline: true }
+      );
+    } else {
+      embed.addFields(
+        { name: "K/D (all-time)", value: `**${fmtKd(t.kd)}**\n${fmtNum(t.kills)} / ${fmtNum(t.deaths)} (${signed(t.kills - t.deaths)})`, inline: true },
+        { name: "Side Splits", value: `⚔️ **${fmtKd(agg.attacker.kd)}** KD · **${fmtPct(agg.attacker.winPct)}** WR\n(${fmtNum(agg.attacker.kills)}/${fmtNum(agg.attacker.deaths)})\n🛡️ **${fmtKd(agg.defender.kd)}** KD · **${fmtPct(agg.defender.winPct)}** WR\n(${fmtNum(agg.defender.kills)}/${fmtNum(agg.defender.deaths)})`, inline: true },
+        { name: "Entry K/D", value: `**${fmtKd(t.entryKd)}**\n${fmtNum(t.firstBloods)} / ${fmtNum(t.firstDeaths)} (${signed(t.entryDiff)})`, inline: true },
+        { name: "Clutch %", value: fmtPct(t.clutchWinPercent), inline: true }
+      );
+    }
   } else if (rec) {
     embed.addFields(
-      { name: "K/D (season)", value: fmtKd(rec.kd), inline: true },
-      { name: "Kills (season)", value: fmtNum(rec.kills), inline: true },
-      { name: "Deaths (season)", value: fmtNum(rec.deaths), inline: true }
+      { name: "K/D (season)", value: `**${fmtKd(rec.kd)}**\n${fmtNum(rec.kills)} / ${fmtNum(rec.deaths)} (${signed(rec.kills - rec.deaths)})`, inline: true }
     );
   }
 
   return footer(embed, fetchedAt);
+}
+
+const OPERATOR_ROLES = {
+  // Attackers - Entry
+  ash: { role: "Entry", side: "Attacker" },
+  zofia: { role: "Entry", side: "Attacker" },
+  nokk: { role: "Entry", side: "Attacker" },
+  amaru: { role: "Entry", side: "Attacker" },
+  ying: { role: "Entry", side: "Attacker" },
+  blitz: { role: "Entry", side: "Attacker" },
+  finka: { role: "Entry", side: "Attacker" },
+  sledge: { role: "Entry", side: "Attacker" },
+  buck: { role: "Entry", side: "Attacker" },
+  iana: { role: "Entry", side: "Attacker" },
+  striker: { role: "Entry", side: "Attacker" },
+  recruit: { role: "Entry", side: "Attacker" },
+  glaz: { role: "Entry", side: "Attacker" },
+  blackbeard: { role: "Entry", side: "Attacker" },
+  capitao: { role: "Entry", side: "Attacker" },
+
+  // Attackers - Intel
+  zero: { role: "Intel", side: "Attacker" },
+  dokkaebi: { role: "Intel", side: "Attacker" },
+  deimos: { role: "Intel", side: "Attacker" },
+  lion: { role: "Intel", side: "Attacker" },
+  iq: { role: "Intel", side: "Attacker" },
+  twitch: { role: "Intel", side: "Attacker" },
+  jackal: { role: "Intel", side: "Attacker" },
+  flores: { role: "Intel", side: "Attacker" },
+  grim: { role: "Intel", side: "Attacker" },
+  brava: { role: "Intel", side: "Attacker" },
+
+  // Attackers - Support
+  thermite: { role: "Support", side: "Attacker" },
+  hibana: { role: "Support", side: "Attacker" },
+  ace: { role: "Support", side: "Attacker" },
+  maverick: { role: "Support", side: "Attacker" },
+  thatcher: { role: "Support", side: "Attacker" },
+  kali: { role: "Support", side: "Attacker" },
+  gridlock: { role: "Support", side: "Attacker" },
+  fuze: { role: "Support", side: "Attacker" },
+  montagne: { role: "Support", side: "Attacker" },
+  monty: { role: "Support", side: "Attacker" },
+  sens: { role: "Support", side: "Attacker" },
+  osa: { role: "Support", side: "Attacker" },
+  ram: { role: "Support", side: "Attacker" },
+  nomad: { role: "Support", side: "Attacker" },
+
+  // Defenders - Roamer
+  jager: { role: "Roamer", side: "Defender" },
+  vigil: { role: "Roamer", side: "Defender" },
+  caveira: { role: "Roamer", side: "Defender" },
+  ela: { role: "Roamer", side: "Defender" },
+  alibi: { role: "Roamer", side: "Defender" },
+  oryx: { role: "Roamer", side: "Defender" },
+  warden: { role: "Roamer", side: "Defender" },
+  melusi: { role: "Roamer", side: "Defender" },
+  thorn: { role: "Roamer", side: "Defender" },
+  tubarao: { role: "Roamer", side: "Defender" },
+
+  // Defenders - Intel
+  valkyrie: { role: "Intel", side: "Defender" },
+  maestro: { role: "Intel", side: "Defender" },
+  echo: { role: "Intel", side: "Defender" },
+  solis: { role: "Intel", side: "Defender" },
+  lesion: { role: "Intel", side: "Defender" },
+  fenrir: { role: "Intel", side: "Defender" },
+  pulse: { role: "Intel", side: "Defender" },
+  mozzie: { role: "Intel", side: "Defender" },
+
+  // Defenders - Anchor
+  rook: { role: "Anchor", side: "Defender" },
+  doc: { role: "Anchor", side: "Defender" },
+  mira: { role: "Anchor", side: "Defender" },
+  kaid: { role: "Anchor", side: "Defender" },
+  bandit: { role: "Anchor", side: "Defender" },
+  mute: { role: "Anchor", side: "Defender" },
+  castle: { role: "Anchor", side: "Defender" },
+  clash: { role: "Anchor", side: "Defender" },
+  azami: { role: "Anchor", side: "Defender" },
+  aruni: { role: "Anchor", side: "Defender" },
+  tachanka: { role: "Anchor", side: "Defender" },
+  wamai: { role: "Anchor", side: "Defender" },
+  goyo: { role: "Anchor", side: "Defender" },
+  smoke: { role: "Anchor", side: "Defender" },
+  thunderbird: { role: "Anchor", side: "Defender" },
+  sentry: { role: "Anchor", side: "Defender" },
+  skopos: { role: "Anchor", side: "Defender" },
+  frost: { role: "Anchor", side: "Defender" },
+};
+
+function formatOperatorTable(operators) {
+  if (!operators || operators.length === 0) {
+    return "*No operators played*";
+  }
+  const header = "Operator        Rnd   K/D  HS%  Win%";
+  const rows = operators.map((o) => {
+    const op = (o.operator || "?").trim().padEnd(14).slice(0, 14);
+    const rnd = String(o.roundsPlayed || 0).padStart(5);
+    const kd = fmtKd(o.kd).padStart(5);
+    const hs = `${Math.round(o.headshotPercent || 0)}%`.padStart(4);
+    const win = `${Math.round(o.winPercent || 0)}%`.padStart(4);
+    return `${op}${rnd} ${kd} ${hs} ${win}`;
+  });
+  return "```\n" + header + "\n" + rows.join("\n") + "\n```";
 }
 
 export function buildOperatorsEmbed(target, { ops, account }, limit = 12) {
@@ -168,22 +283,49 @@ export function buildOperatorsEmbed(target, { ops, account }, limit = 12) {
   if (!agg.hasData) return notFoundEmbed(target);
 
   const name = playerName(target, acc);
-  const rows = agg.topOperators.slice(0, limit).map((o) => {
-    const op = (o.operator || "?").padEnd(14).slice(0, 14);
-    const rnd = String(o.roundsPlayed || 0).padStart(5);
-    const kd = fmtKd(o.kd).padStart(5);
-    const hs = `${Math.round(o.headshotPercent || 0)}%`.padStart(4);
-    const win = `${Math.round(o.winPercent || 0)}%`.padStart(4);
-    return `${op}${rnd} ${kd} ${hs} ${win}`;
-  });
 
-  const header = "Operator        Rnd   K/D  HS%  Win%";
-  const table = "```\n" + header + "\n" + rows.join("\n") + "\n```";
+  const attackerEntry = [];
+  const attackerIntel = [];
+  const attackerSupport = [];
+  const defenderRoamer = [];
+  const defenderIntel = [];
+  const defenderAnchor = [];
+
+  for (const op of agg.topOperators) {
+    const opName = (op.operator || "").trim().toLowerCase();
+    const mapping = OPERATOR_ROLES[opName];
+    const side = op.side || mapping?.side;
+    let role = mapping?.role;
+
+    if (!role) {
+      if (side === "Attacker") role = "Entry";
+      else role = "Anchor";
+    }
+
+    if (side === "Attacker") {
+      if (role === "Entry" && attackerEntry.length < 3) attackerEntry.push(op);
+      else if (role === "Intel" && attackerIntel.length < 3) attackerIntel.push(op);
+      else if (role === "Support" && attackerSupport.length < 3) attackerSupport.push(op);
+    } else {
+      if (role === "Roamer" && defenderRoamer.length < 3) defenderRoamer.push(op);
+      else if (role === "Intel" && defenderIntel.length < 3) defenderIntel.push(op);
+      else if (role === "Anchor" && defenderAnchor.length < 3) defenderAnchor.push(op);
+    }
+  }
 
   const embed = new EmbedBuilder()
     .setColor(DEFAULT_COLOR)
-    .setAuthor({ name: `${name} — Top operators (ranked)`, iconURL: acc?.profilePicture || undefined })
-    .setDescription(table);
+    .setAuthor({ name: `${name} — Top operators (ranked)`, iconURL: acc?.profilePicture || undefined });
+
+  embed.addFields(
+    { name: "⚔️ Attacker — Entry", value: formatOperatorTable(attackerEntry), inline: false },
+    { name: "⚔️ Attacker — Intel", value: formatOperatorTable(attackerIntel), inline: false },
+    { name: "⚔️ Attacker — Support", value: formatOperatorTable(attackerSupport), inline: false },
+    { name: "🛡️ Defender — Roamer", value: formatOperatorTable(defenderRoamer), inline: false },
+    { name: "🛡️ Defender — Intel", value: formatOperatorTable(defenderIntel), inline: false },
+    { name: "🛡️ Defender — Anchor", value: formatOperatorTable(defenderAnchor), inline: false }
+  );
+
   if (acc?.profilePicture) embed.setThumbnail(acc.profilePicture);
 
   return footer(embed, ops?.fetchedAt ?? Date.now());

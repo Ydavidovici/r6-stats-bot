@@ -10,6 +10,8 @@ function blank() {
     roundsPlayed: 0,
     kills: 0,
     deaths: 0,
+    wins: 0,
+    losses: 0,
     assists: 0,
     headshots: 0,
     aces: 0,
@@ -28,6 +30,8 @@ function add(acc, op) {
   acc.roundsPlayed += op.roundsPlayed || 0;
   acc.kills += op.kills || 0;
   acc.deaths += op.deaths || 0;
+  acc.wins += op.wins || 0;
+  acc.losses += op.losses || 0;
   acc.assists += op.assists || 0;
   acc.headshots += op.headshots || 0;
   acc.aces += op.aces || 0;
@@ -46,6 +50,7 @@ function add(acc, op) {
 
 function derive(t) {
   const clutchTotal = t.clutches + t.clutchesLost;
+  const winTotal = t.wins + t.losses;
   return {
     ...t,
     kd: t.deaths ? t.kills / t.deaths : t.kills,
@@ -54,6 +59,7 @@ function derive(t) {
     entryKd: t.firstDeaths ? t.firstBloods / t.firstDeaths : t.firstBloods,
     entryDiff: t.firstBloods - t.firstDeaths,
     clutchWinPercent: clutchTotal ? (t.clutches / clutchTotal) * 100 : 0,
+    winPct: winTotal ? (t.wins / winTotal) * 100 : 0,
   };
 }
 
