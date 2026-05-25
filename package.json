@@ -1,0 +1,16 @@
+{
+  "name": "r6-stats-bot",
+  "type": "module",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "start": "bun run src/index.js",
+    "deploy": "bun run src/deploy.js",
+    "spike": "bun run spike/dump.js",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "discord.js": "^14.26.4",
+    "r6-data.js": "^3.1.6"
+  }
+}

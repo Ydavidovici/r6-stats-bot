@@ -1,0 +1,898 @@
+{
+  "data": {
+    "history": {
+      "data": [
+        [
+          "2026-05-07T07:51:14.95+00:00",
+          {
+            "value": 4792,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,792"
+          }
+        ],
+        [
+          "2026-05-07T07:21:57.056+00:00",
+          {
+            "value": 4818,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,818"
+          }
+        ],
+        [
+          "2026-05-07T06:59:53.921+00:00",
+          {
+            "value": 4813,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,813"
+          }
+        ],
+        [
+          "2026-05-07T06:32:18.519+00:00",
+          {
+            "value": 4807,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,807"
+          }
+        ],
+        [
+          "2026-05-07T06:06:44.543+00:00",
+          {
+            "value": 4801,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,801"
+          }
+        ],
+        [
+          "2026-05-07T05:45:15.341+00:00",
+          {
+            "value": 4795,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,795"
+          }
+        ],
+        [
+          "2026-05-07T05:22:18.194+00:00",
+          {
+            "value": 4821,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,821"
+          }
+        ],
+        [
+          "2026-05-07T04:49:49.93+00:00",
+          {
+            "value": 4816,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,816"
+          }
+        ],
+        [
+          "2026-05-07T04:32:00.739+00:00",
+          {
+            "value": 4811,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,811"
+          }
+        ],
+        [
+          "2026-05-07T04:15:09.625+00:00",
+          {
+            "value": 4805,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,805"
+          }
+        ],
+        [
+          "2026-05-07T03:52:59.559+00:00",
+          {
+            "value": 4799,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,799"
+          }
+        ],
+        [
+          "2026-05-07T03:26:21.765+00:00",
+          {
+            "value": 4793,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,793"
+          }
+        ],
+        [
+          "2026-05-05T17:33:14.153+00:00",
+          {
+            "value": 4813,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,813"
+          }
+        ],
+        [
+          "2026-05-04T07:09:41.916+00:00",
+          {
+            "value": 4808,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,808"
+          }
+        ],
+        [
+          "2026-05-04T06:13:29.304+00:00",
+          {
+            "value": 4835,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,835"
+          }
+        ],
+        [
+          "2026-05-04T05:40:20.068+00:00",
+          {
+            "value": 4830,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,830"
+          }
+        ],
+        [
+          "2026-04-29T00:10:52.1+00:00",
+          {
+            "value": 4830,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,830"
+          }
+        ],
+        [
+          "2026-04-28T23:30:26.241+00:00",
+          {
+            "value": 4825,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,825"
+          }
+        ],
+        [
+          "2026-04-28T23:03:32.193+00:00",
+          {
+            "value": 4852,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,852"
+          }
+        ],
+        [
+          "2026-04-28T22:27:03.631+00:00",
+          {
+            "value": 4848,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,848"
+          }
+        ],
+        [
+          "2026-04-28T22:06:59.257+00:00",
+          {
+            "value": 4844,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,844"
+          }
+        ],
+        [
+          "2026-04-28T21:42:16.818+00:00",
+          {
+            "value": 4840,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,840"
+          }
+        ],
+        [
+          "2026-04-28T21:12:33.321+00:00",
+          {
+            "value": 4835,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,835"
+          }
+        ],
+        [
+          "2026-04-28T20:56:41.609+00:00",
+          {
+            "value": 4830,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,830"
+          }
+        ],
+        [
+          "2026-04-28T20:17:28.997+00:00",
+          {
+            "value": 4825,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,825"
+          }
+        ],
+        [
+          "2026-04-27T07:03:43.103+00:00",
+          {
+            "value": 4820,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,820"
+          }
+        ],
+        [
+          "2026-04-27T06:40:39.594+00:00",
+          {
+            "value": 4847,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,847"
+          }
+        ],
+        [
+          "2026-04-27T06:26:06.908+00:00",
+          {
+            "value": 4843,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,843"
+          }
+        ],
+        [
+          "2026-04-27T05:53:27.886+00:00",
+          {
+            "value": 4838,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,838"
+          }
+        ],
+        [
+          "2026-04-27T05:23:19.097+00:00",
+          {
+            "value": 4833,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,833"
+          }
+        ],
+        [
+          "2026-04-27T04:52:29.413+00:00",
+          {
+            "value": 4828,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,828"
+          }
+        ],
+        [
+          "2026-04-27T04:35:45.148+00:00",
+          {
+            "value": 4823,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,823"
+          }
+        ],
+        [
+          "2026-04-27T04:13:23.514+00:00",
+          {
+            "value": 4818,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,818"
+          }
+        ],
+        [
+          "2026-04-27T03:56:38.453+00:00",
+          {
+            "value": 4813,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,813"
+          }
+        ],
+        [
+          "2026-04-27T03:42:07.65+00:00",
+          {
+            "value": 4808,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,808"
+          }
+        ],
+        [
+          "2026-04-26T23:58:41.359+00:00",
+          {
+            "value": 4802,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,802"
+          }
+        ],
+        [
+          "2026-04-26T23:21:01.22+00:00",
+          {
+            "value": 4796,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,796"
+          }
+        ],
+        [
+          "2026-04-26T23:01:12.976+00:00",
+          {
+            "value": 4790,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,790"
+          }
+        ],
+        [
+          "2026-04-26T22:47:18.774+00:00",
+          {
+            "value": 4784,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,784"
+          }
+        ],
+        [
+          "2026-04-26T22:30:13.409+00:00",
+          {
+            "value": 4778,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,778"
+          }
+        ],
+        [
+          "2026-04-26T22:15:12.516+00:00",
+          {
+            "value": 4771,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,771"
+          }
+        ],
+        [
+          "2026-04-26T04:00:28.575+00:00",
+          {
+            "value": 4764,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,764"
+          }
+        ],
+        [
+          "2026-04-26T03:36:22.223+00:00",
+          {
+            "value": 4757,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,757"
+          }
+        ],
+        [
+          "2026-04-26T03:14:35.177+00:00",
+          {
+            "value": 4750,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,750"
+          }
+        ],
+        [
+          "2026-04-25T20:53:49.372+00:00",
+          {
+            "value": 4742,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,742"
+          }
+        ],
+        [
+          "2026-04-25T20:11:56.129+00:00",
+          {
+            "value": 4767,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,767"
+          }
+        ],
+        [
+          "2026-04-25T19:56:01.824+00:00",
+          {
+            "value": 4760,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,760"
+          }
+        ],
+        [
+          "2026-04-25T19:39:45.225+00:00",
+          {
+            "value": 4753,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,753"
+          }
+        ],
+        [
+          "2026-04-24T20:11:57.985+00:00",
+          {
+            "value": 4746,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,746"
+          }
+        ],
+        [
+          "2026-04-24T19:53:05.266+00:00",
+          {
+            "value": 4771,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,771"
+          }
+        ],
+        [
+          "2026-04-24T19:19:24.743+00:00",
+          {
+            "value": 4764,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,764"
+          }
+        ],
+        [
+          "2026-04-24T18:55:28.448+00:00",
+          {
+            "value": 4757,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,757"
+          }
+        ],
+        [
+          "2026-04-24T18:33:06.17+00:00",
+          {
+            "value": 4750,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,750"
+          }
+        ],
+        [
+          "2026-04-24T18:06:30.832+00:00",
+          {
+            "value": 4742,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,742"
+          }
+        ],
+        [
+          "2026-04-24T17:47:43.974+00:00",
+          {
+            "value": 4734,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,734"
+          }
+        ],
+        [
+          "2026-04-24T17:27:58.243+00:00",
+          {
+            "value": 4726,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,726"
+          }
+        ],
+        [
+          "2026-04-24T16:55:23.081+00:00",
+          {
+            "value": 4718,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,718"
+          }
+        ],
+        [
+          "2026-04-23T23:22:51.375+00:00",
+          {
+            "value": 4709,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,709"
+          }
+        ],
+        [
+          "2026-04-23T23:05:49.527+00:00",
+          {
+            "value": 4700,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,700"
+          }
+        ],
+        [
+          "2026-04-23T22:51:46.29+00:00",
+          {
+            "value": 4691,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,691"
+          }
+        ],
+        [
+          "2026-04-23T22:17:25.687+00:00",
+          {
+            "value": 4681,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,681"
+          }
+        ],
+        [
+          "2026-04-23T22:02:04.697+00:00",
+          {
+            "value": 4671,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,671"
+          }
+        ],
+        [
+          "2026-04-22T01:51:20.14+00:00",
+          {
+            "value": 4661,
+            "metadata": {
+              "rank": "Champion",
+              "color": "#d0073c",
+              "imageUrl": "https://r6data.eu/assets/img/r6_ranks_img/champion.webp"
+            },
+            "displayName": "Rank Points",
+            "displayType": "Number",
+            "displayValue": "4,661"
+          }
+        ]
+      ],
+      "metadata": {
+        "key": "RankPoints",
+        "name": "Rank Points",
+        "description": null
+      }
+    },
+    "expiryDate": "0001-01-01T00:00:00+00:00",
+    "bestMatches": null,
+    "leaderboard": null
+  }
+}

@@ -1,0 +1,302 @@
+================================================================================
+ R6 STATS BOT — PROJECT PLAN
+ Rainbow Six Siege player-stats Discord bot
+ Created: 2026-05-25   |   Revised: 2026-05-25 (Path A pivot after DataDome block)
+================================================================================
+
+--------------------------------------------------------------------------------
+ 1. GOAL
+--------------------------------------------------------------------------------
+A Discord bot that fetches Rainbow Six Siege player data on demand. Capture the
+maximum stats available, store them, and curate what we display (rich embeds or
+text). "As much data as possible so we can decide what to show."
+
+--------------------------------------------------------------------------------
+ 2. DATA SOURCE — DECISION (this changed; read it)
+--------------------------------------------------------------------------------
+There is NO official public R6 stats API. The original plan was to log into
+Ubisoft's private API with a burner account via r6api.js.
+
+THAT APPROACH IS DEAD. Confirmed 2026-05-25 by direct probe:
+  - Ubisoft's auth endpoint (public-ubiservices.ubi.com/v3/profiles/sessions)
+    sits behind DataDome bot protection.
+  - A plain server-side POST returns HTTP 403 with an HTML captcha page
+    (headers: x-datadome: protected, set-cookie: datadome=..., body points to
+    geo.captcha-delivery.com) BEFORE credentials are even evaluated.
+  - A browser-like User-Agent does NOT help (DataDome fingerprints JS/TLS/device).
+  - Community also reports 429 multi-hour login lockouts as of April 2026.
+  - This blocks ALL simple email/password wrappers (r6api.js, siegeapi, etc.).
+  - Evidence preserved at spike/auth-probe.js.
+
+CHOSEN PATH = A: hosted third-party API with an API key.
+  - Provider: r6-data.js (npm) backed by r6data.com. Last updated Y11S2 (current).
+  - They handle Ubisoft auth + DataDome; we just call their API with a key.
+  - No ban risk to us, low maintenance, ships today. Works on a VPS (our host).
+
+Rejected: Path B (self-host Playwright/stealth browser to harvest a Ubi ticket +
+datadome cookie). Reason: our host is a VPS/datacenter IP, which DataDome blocks
+hardest; plus it's a permanent maintenance arms race. Kept only as a last resort.
+
+Path A trade-offs (accepted): dependency on r6data.com uptime/terms; possible
+rate limits or future paid tiers; we only get the fields they expose.
+
+--------------------------------------------------------------------------------
+ 3. STACK
+--------------------------------------------------------------------------------
+- Runtime:    Bun (1.3.10)
+- Language:   plain JavaScript, ESM ("type": "module")
+- Discord:    discord.js v14 (slash commands)
+- R6 data:    r6-data.js @3.1.6  (hosted API, API-key auth)
+- Database:   SQLite via built-in bun:sqlite (no ORM)
+- Hosting:    user's own always-on VPS (+ local dev). Two environments.
+- Conventions: mirror the existing log bot at ../discordBot (flat src/, tests
+               alongside as *.test.js, ESM, Bun). Optionally forward logs to it.
+
+--------------------------------------------------------------------------------
+ 4. r6-data.js API SURFACE
+--------------------------------------------------------------------------------
+Init:  const { R6Client } = require('r6-data.js');
+       const r6 = new R6Client({ apiKey: process.env.R6DATA_API_KEY });
+
+players.getAccountInfo({ nameOnPlatform, platformType })
+players.getIsBanned({ nameOnPlatform, platformType })
+players.getPlayerStats({ nameOnPlatform, platformType, platform_families, board_id? })
+players.getSeasonalStats({ nameOnPlatform, platformType })
+players.getOperatorStats({ nameOnPlatform, platformType, modes?, seasonYear? })
+players.getPlayerComparisons({ players[], platform_families, board_id? })
+game.getMaps / getOperators / getSeasons / getWeapons / getRanks / getServiceStatus / ...
+webhooks.createDiscordR6Webhook(...)   (built-in Discord embed helper)
+
+  platformType:      'uplay' (PC) | 'psn' | 'xbl'
+  platform_families: 'pc' | 'console'
+  board_id:          'ranked' | 'casual' | 'standard' | 'event' | 'warmup'
+  modes:             'ranked' | 'casual' | 'unranked'
+
+NOTE: exact returned fields per method are unconfirmed until the spike runs with
+a real key. Section 5 (tiers) is the EXPECTATION, to be validated.
+
+--------------------------------------------------------------------------------
+ 5. STATS SCOPE — CONFIRMED COVERAGE (spike 2026-05-25, Stompn.G2 / uplay)
+--------------------------------------------------------------------------------
+AVAILABLE per method:
+  accountInfo     -> level, profilePicture, profiles[]  (xp returns 0 — ignore)
+  isBanned        -> isBanned, banAlerts[]
+  getPlayerStats  -> per board (ranked/casual/...): rank(id), rank_points (MMR),
+                     max_rank, max_rank_points, kills, deaths, wins, losses,
+                     abandon, season_id.  NO headshots/rounds/HS% here.
+  seasonalStats   -> rank_points TIME-SERIES history (timestamped) w/ tier name,
+                     color, icon URL. -> MMR-over-time graph for free (Phase 2
+                     MMR trend may not need our own snapshots).
+  operatorStats   -> RICHEST. Per operator + side: roundsPlayed, winPercent, kd,
+                     headshotPercent, wins, losses, kills, deaths, assists, aces,
+                     matchesPlayed/Won/Lost(+%), headshots, firstBloods,
+                     firstDeaths, teamKills, killsPerRound, deathsPerRound,
+                     assistsPerRound, headshotsPerRound, killsPerGame, timePlayed
+                     (+Ms), clutches, clutchesLost, kills1K..kills5K.
+                     76 operators returned (all-time; seasonYear filterable).
+                     No totals block -> we aggregate across operators ourselves.
+  getPlayerComparisons -> head-to-head over the stats payload.
+
+DERIVABLE (aggregate operatorStats across operators / sides):
+  overall kills/deaths/K-D, headshots & HS%, assists, aces, wins/losses & win%,
+  rounds, matches, total playtime, attacker-vs-defender splits, multikill totals,
+  AND entry kills (firstBloods) / entry deaths (firstDeaths) AND clutches /
+  clutchesLost.  -> entry + clutch ("pro" stats) ARE available at aggregate level.
+
+NOT available from this provider:
+  - per-MAP player stats (game.getMaps is static metadata only)
+  - per-WEAPON player stats (game.getWeapons is static metadata only)
+  - true KOST and EPS: need per-round OBJECTIVE plays + TRADES, which no field
+    provides. Entry & clutch are here, but KOST's O+T components are not.
+    -> KOST/EPS remain replay-only (Phase 3, Section 11).
+
+DATA DECISION (resolved): RANKED is the focus; casual/non-ranked is irrelevant.
+  getPlayerStats is called WITH board_id='ranked' (the explicit ranked board) for
+  the W/L record. That board's RP (4586) disagrees with the live seasonalStats
+  history (4792), so headline RP + tier are sourced from seasonalStats (the
+  authoritative RP time-series), and the ranked board supplies only
+  wins/losses/abandons/maxRP. Combat/entry/clutch come from operatorStats
+  modes='ranked'. Net: everything displayed is ranked; RP is correct.
+
+RATE LIMIT: 6 rapid sequential calls succeeded with no throttling; ceiling
+  unknown (r6-data.js hides response headers). Monitor in practice; the 5-min
+  cache should keep us well under any sane limit.
+
+Approach: fetch every field every working method returns, store raw, curate the
+display downstream; build an aggregation layer over operatorStats for overall +
+entry + clutch numbers.
+
+--------------------------------------------------------------------------------
+ 6. PERSISTENCE (SQLite, no ORM)
+--------------------------------------------------------------------------------
+Why a DB exists, in priority order:
+  1. CACHING — cut calls to r6data.com (respect their limits; faster responses).
+  2. ACCOUNT LINKING — map Discord user -> R6 identity so /stats needs no args.
+  3. STAT SNAPSHOTS (Phase 2) — the API gives current totals; snapshots let us
+     compute trends/deltas the API can't.
+NOTE: no auth_session table anymore — auth is r6data.com's problem now, not ours.
+
+Portability (VPS + local, no manual SQL):
+  - migrations/ folder with numbered .sql files.
+  - ~30-line runner (bun:sqlite) tracks applied migrations in _migrations and
+    applies new ones in a transaction ON STARTUP. WAL mode.
+  - bun:sqlite auto-creates the .db file; path from DB_PATH env.
+  - Setup anywhere: clone -> bun install -> set .env -> bun start.
+
+Schema sketch:
+  linked_accounts (discord_user_id PK, name_on_platform, platform_type,
+                   platform_families, linked_at)
+  player_cache    (cache_key PK, payload_json, fetched_at, expires_at)
+  guild_config    (guild_id PK, default_platform, display_mode)  -- text vs embed
+  stat_snapshots  (id, name_on_platform, platform_type, captured_at, season,
+                   payload_json)                                  -- Phase 2
+  -- Phase 3 (replay pipeline): matches, rounds, round_player_stats
+
+--------------------------------------------------------------------------------
+ 7. CACHING STRATEGY
+--------------------------------------------------------------------------------
+  - 5-minute TTL flood-guard (a ranked match runs ~20-35 min, so fresh-after-game
+    is unaffected; cache only absorbs repeat spam).
+  - Manual "Refresh" button / refresh:true option that bypasses cache, rate-limited
+    ~1 per 60s per user.
+  - Footer shows freshness ("updated 3m ago") from fetched_at.
+
+--------------------------------------------------------------------------------
+ 8. COMMANDS (initial set, slash commands)
+--------------------------------------------------------------------------------
+  /link <username> <platform>   register your R6 account (stores mapping)
+  /unlink                        remove your mapping
+  /stats [user|username] [platform]   general + ranked overview embed
+  /ranked [user|username]        ranked card (rank, MMR/RP, W/L, K/D)
+  /operators [user|username]     top operators breakdown
+  /seasonal [user|username]      seasonal progression
+  /banstatus [username]          ban check
+  /compare <a> <b>               head-to-head (getPlayerComparisons)
+  (Phase 2) /trends, /session    deltas from snapshots
+  (Phase 3) /match, /advanced    replay-derived KOST/EPS/clutch stats
+
+Platforms: uplay (PC), psn, xbl. Pros (e.g. Stompn.G2, BriD) are on uplay/PC.
+
+--------------------------------------------------------------------------------
+ 9. ARCHITECTURE
+--------------------------------------------------------------------------------
+  src/
+    index.js          entry: load env, run migrations, start client
+    db/
+      index.js         bun:sqlite connection (WAL), migration runner
+      migrations/      0001_init.sql, ...
+    r6/
+      client.js        R6Client wrapper + read-through cache (player_cache + TTL)
+    commands/          one file per slash command
+    embeds/            formatters: r6-data.js payloads -> discord embeds
+    deploy.js          register slash commands with Discord
+  spike/
+    dump.js            r6-data.js coverage spike
+    auth-probe.js      DataDome block evidence (historical)
+
+--------------------------------------------------------------------------------
+ 10. PHASES
+--------------------------------------------------------------------------------
+PHASE 0 — Spike (BLOCKED on API key)
+  - spike/dump.js dumps every players.* method for one player to confirm coverage.
+  - BLOCKED ON: user registering at r6data.com and putting R6DATA_API_KEY in .env.
+
+PHASE 1 — Core API bot
+  - DB + migrations + read-through cache + account linking.
+  - /link, /stats, /ranked, /operators, /seasonal, /banstatus, /compare.
+  - Rich embeds; slash command registration.
+
+PHASE 2 — Trends
+  - Daily stat snapshots; /trends and /session deltas; MMR-over-time.
+
+PHASE 3 — Replay parsing (advanced stats) — see Section 11.
+
+--------------------------------------------------------------------------------
+ 11. MATCH REPLAY PARSING — DETAILED PLAN (PHASE 3)
+--------------------------------------------------------------------------------
+This is the ONLY way to get KOST / EPS / entry / trade / clutch stats. It is a
+separate pipeline from the API bot and reuses the same SQLite DB.
+
+TOOL: r6-dissect (open-source, redraskal). A Go CLI/library that parses Siege
+  Match Replay ".rec" files into structured JSON: match metadata, all 10 players,
+  and per-round events with timestamps (kills incl. headshot flag + weapon,
+  deaths, objective plant/defuse/disable, operators, sites). Same data source
+  R6 Analyst uses. We shell out to the r6-dissect binary from Bun (spawn -> JSON).
+
+THE HARD CONSTRAINT: .rec files only exist on the PC of someone who PLAYED the
+  match with Match Replay enabled. There is NO API to download another player's
+  replays. So this can NEVER cover arbitrary players or pros on demand — only
+  accounts whose replay files we can physically collect.
+
+ACQUISITION MODELS (pick when we get here):
+  (a) Controlled-PC watcher: a process on a gaming PC watches the MatchReplays
+      folder, auto-ingests new matches after each game, parses, stores. Best for
+      tracking yourself or a roster/team you run.
+  (b) Upload-based: users upload their MatchReplays folder (Discord attachment or
+      a small web endpoint); bot parses and returns advanced stats. Manual, files
+      are several .rec per match (one per round), tens of MB.
+
+PIPELINE STEPS:
+  1. Detect / receive a new match folder (.rec set).
+  2. Run r6-dissect -> JSON (per-round events).
+  3. Normalize into matches / rounds / round_player_stats tables.
+  4. Compute derived stats (below).
+  5. Expose via /match, /advanced, /session commands.
+
+DERIVED STAT DEFINITIONS (document choices; they vary by site):
+  - KOST% = rounds where player did >=1 of {Kill, Objective, Survived, Traded}
+            / rounds played.
+      Kill      = >=1 kill that round.
+      Objective = attacker planted defuser, or defender defused/disabled it.
+      Survived  = alive at round end.
+      Traded    = player's death was avenged by a teammate killing the killer
+                  within N seconds (N configurable, ~5-10s).
+  - Entry kill/death = first kill / first death of the round (opening duel).
+  - Trade kill       = kill within N s of a teammate's death.
+  - Clutch           = last player alive on team AND won the round (1vX).
+  - Survival rate, per-round K/D, per-site / per-operator splits.
+  - EPS (Expected Player Score): KOST-derived composite. All INPUTS are available
+    once we parse replays; the exact weighting/formula must be pinned down first
+    (it may be a specific analytics site's proprietary metric).
+
+CAVEATS:
+  - .rec format is undocumented and changes most seasons; r6-dissect needs
+    periodic per-season patches (active project, but expect occasional gaps).
+  - Match Replay must be enabled in-game.
+  - Replays contain ALL 10 players, so ingesting your matches yields advanced
+    stats for opponents/teammates too (useful, but note the privacy implication).
+  - Requires the r6-dissect binary present on the host running ingestion.
+
+--------------------------------------------------------------------------------
+ 12. RISKS
+--------------------------------------------------------------------------------
+  - Provider dependency (r6data.com): uptime, terms, rate limits, possible paid
+    tiers. Mitigate with caching; keep the r6/client.js layer swappable so we can
+    change providers (or fall back to Path B) without touching commands/embeds.
+  - Unknown rate limits: confirm during the spike; tune cache TTL accordingly.
+  - Coverage gaps: Section 5 is an expectation; the spike is the source of truth.
+  - Phase 3 replay-format breakage each season.
+
+--------------------------------------------------------------------------------
+ 13. CURRENT STATUS / NEXT STEP
+--------------------------------------------------------------------------------
+  - Project at C:\Users\Owner\Desktop\r6-stats-bot
+  - r6-data.js@3.1.6 installed; r6api.js removed.
+  - spike/dump.js rewritten for r6-data.js; auth-probe.js kept as evidence.
+  NEXT (blocker): user registers at https://r6data.com, creates an API key, adds
+  R6DATA_API_KEY to .env, then run:
+      cd r6-stats-bot
+      bun run spike                              # defaults to Stompn.G2 on PC
+      bun run spike/dump.js "BriD" uplay
+  Then review spike/out/<platform>_<name>/ to lock the schema + embeds, and note
+  the response rate limits.
+
+--------------------------------------------------------------------------------
+ 14. OPEN QUESTIONS
+--------------------------------------------------------------------------------
+  - Default display: rich embeds vs text? (lean embeds, configurable per guild)
+  - Use r6-data.js's built-in createDiscordR6Webhook helper, or hand-roll embeds
+    for full control? (decide after seeing the spike output)
+  - Multi-server / public bot, or private to a few servers?
+  - Integrate logging into the existing ../discordBot, or standalone?
+================================================================================

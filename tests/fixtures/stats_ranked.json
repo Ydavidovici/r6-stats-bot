@@ -1,0 +1,38 @@
+{
+  "platform_families_full_profiles": [
+    {
+      "profile_id": "b598e9a9-f817-42fe-b381-45f918e5efa4",
+      "board_ids_full_profiles": [
+        {
+          "board_id": "ranked",
+          "full_profiles": [
+            {
+              "season_id": 41,
+              "profile": {
+                "rank": 36,
+                "rank_points": 4586,
+                "max_rank": 36,
+                "max_rank_points": 4857,
+                "kills": 1427,
+                "deaths": 697,
+                "wins": 167,
+                "losses": 45,
+                "abandon": 1,
+                "update_time": "0001-01-01T00:00:00+00:00"
+              },
+              "season_statistics": {
+                "kills": 1427,
+                "deaths": 697,
+                "match_outcomes": {
+                  "wins": 167,
+                  "losses": 45,
+                  "abandons": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
