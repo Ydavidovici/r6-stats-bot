@@ -29,6 +29,8 @@ class FakeClient {
 
 mock.module("r6-data.js", () => ({ default: { R6Client: FakeClient }, R6Client: FakeClient }));
 
+process.env.CACHE_TTL_MIN = "15";
+
 const {
   accountInfo,
   playerStats,

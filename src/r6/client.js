@@ -3,14 +3,15 @@ import { getCache, setCache } from "../db/repo.js";
 
 const { R6Client } = pkg;
 
-// r6data.com free tier is ~5k calls/month, so cache aggressively.
-const RANKED_TTL_MINUTES = Number(process.env.CACHE_TTL_MIN) || 15;
+// r6data.com free tier is ~5k calls/month, so cache aggressively by default.
+// Set CACHE_TTL_MIN=0 in .env to disable caching entirely.
+const RANKED_TTL_MINUTES = process.env.CACHE_TTL_MIN !== undefined ? Number(process.env.CACHE_TTL_MIN) : 15;
 
-export const TTL_RANKED_STATS = RANKED_TTL_MINUTES * 60 * 1000;      // 15-min default (fast changing RP/record)
-export const TTL_SEASONAL_STATS = RANKED_TTL_MINUTES * 60 * 1000;    // 15-min default
-export const TTL_BAN_STATUS = 24 * 60 * 60 * 1000;                  // 24 hours
-export const TTL_ACCOUNT_INFO = 7 * 24 * 60 * 60 * 1000;             // 7 days (avatar, level, etc.)
-export const TTL_OPERATOR_STATS = 7 * 24 * 60 * 60 * 1000;           // 7 days (all-time operators)
+export const TTL_RANKED_STATS = RANKED_TTL_MINUTES * 60 * 1000;
+export const TTL_SEASONAL_STATS = RANKED_TTL_MINUTES * 60 * 1000;
+export const TTL_BAN_STATUS = RANKED_TTL_MINUTES === 0 ? 0 : 24 * 60 * 60 * 1000;
+export const TTL_ACCOUNT_INFO = RANKED_TTL_MINUTES === 0 ? 0 : 7 * 24 * 60 * 60 * 1000;
+export const TTL_OPERATOR_STATS = RANKED_TTL_MINUTES === 0 ? 0 : 7 * 24 * 60 * 60 * 1000;
 
 let client = null;
 function getClient() {
