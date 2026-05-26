@@ -127,3 +127,27 @@ describe("distinct cache TTLs per endpoint", () => {
     expect(opsRow.expires_at - opsRow.fetched_at).toBe(TTL_OPERATOR_STATS);
   });
 });
+
+describe("disabled cache (TTL = 0)", () => {
+  test("never hits cache, always calls API", async () => {
+    const origTtl = process.env.CACHE_TTL_MIN;
+    process.env.CACHE_TTL_MIN = "0";
+
+    const { accountInfo: accountInfoZero } = await import(
+      `../src/r6/client.js?nocache=${Date.now()}`
+    );
+
+    if (origTtl !== undefined) process.env.CACHE_TTL_MIN = origTtl;
+    else delete process.env.CACHE_TTL_MIN;
+
+    const startCalls = accountCalls;
+
+    const a = await accountInfoZero("Stompn.G2.Zero", "uplay");
+    expect(a.cached).toBe(false);
+    expect(accountCalls - startCalls).toBe(1);
+
+    const b = await accountInfoZero("Stompn.G2.Zero", "uplay");
+    expect(b.cached).toBe(false);
+    expect(accountCalls - startCalls).toBe(2);
+  });
+});

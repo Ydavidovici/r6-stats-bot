@@ -27,7 +27,7 @@ const norm = (s) => String(s).trim().toLowerCase();
 
 // Read-through cache. Returns { data, fetchedAt, cached }.
 async function cached(key, fetcher, ttlMs, { force = false } = {}) {
-  if (!force) {
+  if (!force && ttlMs > 0) {
     const hit = getCache(key);
     if (hit) {
       return { data: JSON.parse(hit.payload_json), fetchedAt: hit.fetched_at, cached: true };
@@ -35,7 +35,9 @@ async function cached(key, fetcher, ttlMs, { force = false } = {}) {
   }
   const data = await fetcher();
   const fetchedAt = Date.now();
-  setCache(key, JSON.stringify(data), ttlMs);
+  if (ttlMs > 0) {
+    setCache(key, JSON.stringify(data), ttlMs);
+  }
   return { data, fetchedAt, cached: false };
 }
 
