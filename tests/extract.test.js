@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { getBoard, rankedRecord, currentTier, rpSeries, sparkline } from "../src/r6/extract.js";
+import { getBoard, rankedRecord, currentTier, rpSeries, sparkline, getTierFromRankIndex } from "../src/r6/extract.js";
 import { fixture } from "./helpers.js";
 
 const stats = fixture("stats_ranked.json");
@@ -78,5 +78,30 @@ describe("sparkline", () => {
     expect(out.length).toBe(8);
     expect(out[0]).toBe("▁");
     expect(out.at(-1)).toBe("█");
+  });
+});
+
+describe("getTierFromRankIndex", () => {
+  test("returns correct rank metadata for different indices", () => {
+    expect(getTierFromRankIndex(0)).toEqual({
+      name: "Unranked",
+      color: "#a4a4a4",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/unranked.webp",
+    });
+    expect(getTierFromRankIndex(20)).toEqual({
+      name: "Gold 1",
+      color: "#e5c613",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/gold-1.webp",
+    });
+    expect(getTierFromRankIndex(21)).toEqual({
+      name: "Platinum 5",
+      color: "#359da8",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/platinum-5.webp",
+    });
+    expect(getTierFromRankIndex(36)).toEqual({
+      name: "Champion",
+      color: "#d0073c",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/champion.webp",
+    });
   });
 });

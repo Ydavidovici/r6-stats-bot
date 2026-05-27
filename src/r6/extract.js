@@ -25,6 +25,7 @@ export function rankedRecord(board) {
     kills: p.kills || 0,
     deaths: p.deaths || 0,
     kd: p.deaths ? p.kills / p.deaths : p.kills,
+    rank: p.rank || 0,
   };
 }
 
@@ -61,4 +62,41 @@ export function sparkline(values) {
         SPARK[Math.min(SPARK.length - 1, Math.floor(((v - min) / range) * (SPARK.length - 1)))]
     )
     .join("");
+}
+
+const TIERS = [
+  { name: "Unranked", color: "#a4a4a4", prefix: "unranked" },
+  { name: "Copper", color: "#cb7846", prefix: "copper" },
+  { name: "Bronze", color: "#a46f4b", prefix: "bronze" },
+  { name: "Silver", color: "#a4a4a4", prefix: "silver" },
+  { name: "Gold", color: "#e5c613", prefix: "gold" },
+  { name: "Platinum", color: "#359da8", prefix: "platinum" },
+  { name: "Emerald", color: "#1ebb64", prefix: "emerald" },
+  { name: "Diamond", color: "#c878d6", prefix: "diamond" },
+  { name: "Champion", color: "#d0073c", prefix: "champion" },
+];
+
+export function getTierFromRankIndex(rankIndex) {
+  if (!rankIndex || rankIndex <= 0) {
+    return {
+      name: "Unranked",
+      color: "#a4a4a4",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/unranked.webp",
+    };
+  }
+  if (rankIndex >= 36) {
+    return {
+      name: "Champion",
+      color: "#d0073c",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/champion.webp",
+    };
+  }
+  const tierIdx = Math.floor((rankIndex - 1) / 5) + 1;
+  const divIdx = 5 - ((rankIndex - 1) % 5);
+  const tier = TIERS[tierIdx];
+  return {
+    name: `${tier.name} ${divIdx}`,
+    color: tier.color,
+    icon: `https://r6data.com/assets/img/r6_ranks_img/${tier.prefix}-${divIdx}.webp`,
+  };
 }

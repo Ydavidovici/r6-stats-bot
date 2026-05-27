@@ -25,10 +25,10 @@ describe("buildStatsEmbed", () => {
     expect(e.color).toBe(0xd0073c);
     expect(e.thumbnail?.url).toContain("champion");
   });
-  test("rank field: tier + RP (from seasonal) + peak", () => {
+  test("rank field: tier + RP (from live board) + peak", () => {
     const f = fieldByName(e, "Rank (current season)");
     expect(f.value).toContain("Champion");
-    expect(f.value).toContain("4,792 RP");
+    expect(f.value).toContain("4,586 RP");
     expect(f.value).toContain("4,857");
   });
   test("ranked record from the ranked board", () => {

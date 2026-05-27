@@ -1,6 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import { aggregateOperators } from "./r6/aggregate.js";
-import { getBoard, rankedRecord, currentTier, rpSeries, sparkline } from "./r6/extract.js";
+import { getBoard, rankedRecord, currentTier, rpSeries, sparkline, getTierFromRankIndex } from "./r6/extract.js";
 import {
   fmtNum,
   fmtKd,
@@ -36,7 +36,9 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
   const acc = account?.data;
   const ranked = getBoard(stats?.data, "ranked");
   const rec = rankedRecord(ranked);
-  const tier = currentTier(seasonal?.data);
+  const tier = rec && rec.rank > 0
+    ? { rankPoints: rec.rankPoints, ...getTierFromRankIndex(rec.rank) }
+    : currentTier(seasonal?.data);
   const agg = aggregateOperators(ops?.data);
 
   if (!agg.hasData && !rec) return notFoundEmbed(target);
@@ -114,7 +116,9 @@ export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
   const acc = account?.data;
   const ranked = getBoard(stats?.data, "ranked");
   const rec = rankedRecord(ranked);
-  const tier = currentTier(seasonal?.data);
+  const tier = rec && rec.rank > 0
+    ? { rankPoints: rec.rankPoints, ...getTierFromRankIndex(rec.rank) }
+    : currentTier(seasonal?.data);
   const agg = aggregateOperators(ops?.data);
 
   if (!rec && !tier) return notFoundEmbed(target);
