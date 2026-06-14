@@ -21,6 +21,9 @@ export function startApiServer(port = process.env.API_PORT || 3000) {
                     return new Response("Unauthorized", {status: 401});
                 }
 
+                // Early return since Y11S2 parsing is in dev
+                return new Response("Replay parsing is currently disabled for Y11S2 maintenance. These features are in development.", {status: 503});
+
                 try {
                     const formData = await req.formData();
                     const files = formData.getAll("replays"); // array of File objects

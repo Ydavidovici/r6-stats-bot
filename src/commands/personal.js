@@ -20,7 +20,9 @@ export const data = new SlashCommandBuilder()
     );
 
 export async function execute(interaction) {
-    await interaction.deferReply();
+    return interaction.reply({
+        content: "⚠️ **Notice:** Personal match stats and replay uploads are currently disabled while we update the parser for the new Y11S2 Match Replay format. These features are in dev.",
+    });
 
     try {
         const limit = interaction.options.getInteger("limit") || 10;

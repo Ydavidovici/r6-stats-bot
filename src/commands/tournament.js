@@ -26,7 +26,9 @@ export const data = new SlashCommandBuilder()
     );
 
 export async function execute(interaction) {
-    await interaction.deferReply();
+    return interaction.reply({
+        content: "⚠️ **Notice:** Tournament match stats and replay uploads are currently disabled while we update the parser for the new Y11S2 Match Replay format. These features are in dev.",
+    });
 
     const subcommand = interaction.options.getSubcommand();
 
