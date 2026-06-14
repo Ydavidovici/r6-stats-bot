@@ -1,7 +1,7 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder, MessageFlags } from "discord.js";
 import { getTournamentStats, getRecentTournamentMatch } from "../db/dbServiceClient.js";
 import { buildTournamentEmbed, buildTournamentMatchEmbed } from "../embeds.js";
-import { resolveTarget } from "./resolve.js";
+import { resolveTarget } from "../lib/resolve.js";
 
 export const data = new SlashCommandBuilder()
     .setName("tournament")
@@ -32,15 +32,12 @@ export async function execute(interaction) {
 
     try {
         if (subcommand === "player") {
-            const usernameInput = interaction.options.getString("username");
             const isRecent = interaction.options.getBoolean("recent") || false;
 
-            const { username } = await resolveTarget(interaction, usernameInput, null);
+            const t = resolveTarget(interaction);
+            if (t.error) return interaction.editReply({ content: t.error });
 
-            if (!username) {
-                return; // resolveTarget handles the error
-            }
-
+            const username = t.nameOnPlatform;
             const stats = await getTournamentStats(username, isRecent);
 
             if (!stats) {

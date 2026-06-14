@@ -1,7 +1,7 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder, MessageFlags } from "discord.js";
 import { getPersonalStats } from "../db/dbServiceClient.js";
 import { buildPersonalEmbed } from "../embeds.js";
-import { resolveTarget } from "./resolve.js";
+import { resolveTarget } from "../lib/resolve.js";
 
 export const data = new SlashCommandBuilder()
     .setName("personal")
@@ -23,15 +23,12 @@ export async function execute(interaction) {
     await interaction.deferReply();
 
     try {
-        const usernameInput = interaction.options.getString("username");
         const limit = interaction.options.getInteger("limit") || 10;
 
-        const { username } = await resolveTarget(interaction, usernameInput, null);
+        const t = resolveTarget(interaction);
+        if (t.error) return interaction.editReply({ content: t.error });
 
-        if (!username) {
-            return;
-        }
-
+        const username = t.nameOnPlatform;
         const stats = await getPersonalStats(username, limit);
 
         if (!stats) {
