@@ -26,6 +26,7 @@ async function loadPlayer(name, platformType, platformFamilies) {
     rec: rankedRecord(getBoard(stats?.data, "ranked")),
     tier: currentTier(seasonal?.data),
     agg: aggregateOperators(ops?.data),
+    sources: [stats, account, ops, seasonal],
   };
 }
 

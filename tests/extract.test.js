@@ -98,10 +98,28 @@ describe("getTierFromRankIndex", () => {
       color: "#359da8",
       icon: "https://r6data.com/assets/img/r6_ranks_img/platinum-5.webp",
     });
-    expect(getTierFromRankIndex(36)).toEqual({
-      name: "Champion",
-      color: "#d0073c",
-      icon: "https://r6data.com/assets/img/r6_ranks_img/champion.webp",
+    // Ranked 3.0: Emerald sits between Platinum and Diamond (indices 26–30).
+    expect(getTierFromRankIndex(26)).toEqual({
+      name: "Emerald 5",
+      color: "#1ebb64",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/emerald-5.webp",
     });
+  });
+
+  test("Champion is divisioned in Ranked 3.0 (40-rank ladder)", () => {
+    // Index 36 used to be the single Champion rank; it is now Champion V.
+    expect(getTierFromRankIndex(36)).toEqual({
+      name: "Champion 5",
+      color: "#d0073c",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/champion-5.webp",
+    });
+    // Top of the ladder is Champion I at index 40.
+    expect(getTierFromRankIndex(40)).toEqual({
+      name: "Champion 1",
+      color: "#d0073c",
+      icon: "https://r6data.com/assets/img/r6_ranks_img/champion-1.webp",
+    });
+    // Out-of-range indices clamp to the top rank rather than crashing.
+    expect(getTierFromRankIndex(99).name).toBe("Champion 1");
   });
 });

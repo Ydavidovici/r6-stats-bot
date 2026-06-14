@@ -19,8 +19,36 @@ function playerName(target, account) {
   return account?.profiles?.[0]?.nameOnPlatform || target.nameOnPlatform;
 }
 
-function footer(embed, fetchedAt) {
-  return embed.setFooter({ text: `via r6data.com • updated ${relTime(fetchedAt)}` }).setTimestamp();
+const SOURCE_LABELS = { r6data: "r6data.com", ubisoft: "Ubisoft" };
+
+// Build the "via …" credit from the providers that actually answered. A single
+// embed can mix sources (e.g. rank from Ubisoft, operators from r6data), so we
+// dedupe the labels in the order given and join them. Falls back to r6data.com.
+export function sourcesText(...results) {
+  const labels = [];
+  for (const r of results) {
+    const label = SOURCE_LABELS[r?.source];
+    if (label && !labels.includes(label)) labels.push(label);
+  }
+  return labels.length ? labels.join(" + ") : "r6data.com";
+}
+
+function footer(embed, fetchedAt, source = "r6data.com") {
+  return embed.setFooter({ text: `via ${source} • updated ${relTime(fetchedAt)}` }).setTimestamp();
+}
+
+// Resolve the tier to display. Rank name/division/colour come from the live
+// ranked-board index (freshest, and correct for Ranked 3.0's 40-rank ladder),
+// but the logo prefers r6data's own served icon so it tracks the new rank art
+// without us hardcoding every URL. Falls back to the seasonal tier when there's
+// no live ranked board.
+function resolveTier(rec, seasonalData) {
+  const seasonTier = currentTier(seasonalData);
+  if (rec && rec.rank > 0) {
+    const live = getTierFromRankIndex(rec.rank);
+    return { rankPoints: rec.rankPoints, ...live, icon: seasonTier?.icon ?? live.icon };
+  }
+  return seasonTier;
 }
 
 function notFoundEmbed(target) {
@@ -36,9 +64,7 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
   const acc = account?.data;
   const ranked = getBoard(stats?.data, "ranked");
   const rec = rankedRecord(ranked);
-  const tier = rec && rec.rank > 0
-    ? { rankPoints: rec.rankPoints, ...getTierFromRankIndex(rec.rank) }
-    : currentTier(seasonal?.data);
+  const tier = resolveTier(rec, seasonal?.data);
   const agg = aggregateOperators(ops?.data);
 
   if (!agg.hasData && !rec) return notFoundEmbed(target);
@@ -109,16 +135,14 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
     embed.setDescription("_Showing ranked statistics for the current season._");
   }
 
-  return footer(embed, fetchedAt);
+  return footer(embed, fetchedAt, sourcesText(stats, account, ops, seasonal));
 }
 
 export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
   const acc = account?.data;
   const ranked = getBoard(stats?.data, "ranked");
   const rec = rankedRecord(ranked);
-  const tier = rec && rec.rank > 0
-    ? { rankPoints: rec.rankPoints, ...getTierFromRankIndex(rec.rank) }
-    : currentTier(seasonal?.data);
+  const tier = resolveTier(rec, seasonal?.data);
   const agg = aggregateOperators(ops?.data);
 
   if (!rec && !tier) return notFoundEmbed(target);
@@ -173,7 +197,7 @@ export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
     );
   }
 
-  return footer(embed, fetchedAt);
+  return footer(embed, fetchedAt, sourcesText(stats, account, ops, seasonal));
 }
 
 const OPERATOR_ROLES = {
@@ -332,7 +356,7 @@ export function buildOperatorsEmbed(target, { ops, account }, limit = 12) {
 
   if (acc?.profilePicture) embed.setThumbnail(acc.profilePicture);
 
-  return footer(embed, ops?.fetchedAt ?? Date.now());
+  return footer(embed, ops?.fetchedAt ?? Date.now(), sourcesText(ops, account));
 }
 
 export function buildSeasonalEmbed(target, { seasonal, account }) {
@@ -360,7 +384,7 @@ export function buildSeasonalEmbed(target, { seasonal, account }) {
     );
   if (tier?.icon) embed.setThumbnail(tier.icon);
 
-  return footer(embed, seasonal?.fetchedAt ?? Date.now());
+  return footer(embed, seasonal?.fetchedAt ?? Date.now(), sourcesText(seasonal, account));
 }
 
 export function buildBanEmbed(target, { ban, account }) {
@@ -382,7 +406,7 @@ export function buildBanEmbed(target, { ban, account }) {
     });
   }
 
-  return footer(embed, ban?.fetchedAt ?? Date.now());
+  return footer(embed, ban?.fetchedAt ?? Date.now(), sourcesText(ban, account));
 }
 
 export function buildCompareEmbed(a, b) {
@@ -399,11 +423,12 @@ export function buildCompareEmbed(a, b) {
     metric("Clutch%", fmtPct(a.agg.total.clutchWinPercent), fmtPct(b.agg.total.clutchWinPercent)),
   ];
 
+  const via = sourcesText(...(a.sources ?? []), ...(b.sources ?? []));
   return new EmbedBuilder()
     .setColor(DEFAULT_COLOR)
     .setTitle("Head-to-head")
     .setDescription("```\n" + lines.join("\n") + "\n```")
-    .setFooter({ text: "via r6data.com • rank/RP current season, combat all-time ranked" })
+    .setFooter({ text: `via ${via} • rank/RP current season, combat all-time ranked` })
     .setTimestamp();
 }
 

@@ -2,10 +2,17 @@ import { test, expect, describe, beforeAll, afterAll, mock } from "bun:test";
 import { initDb } from "../src/db/index.js";
 
 // Track how often the underlying (mocked) r6-data.js client is hit, so we can
-// prove the cache short-circuits repeat calls without any network.
+// prove every command fetches live (no caching) and that retries re-call the
+// upstream when it answers with junk.
 let accountCalls = 0;
 let statsCalls = 0;
 let lastStatsParams = null;
+
+// Scriptable operator responses, to simulate the upstream's inconsistency
+// (empty/malformed payloads or thrown errors). Each call shifts one item; an
+// Error is thrown, anything else is returned. Empties to a valid empty list.
+let opsQueue = [];
+let opsCalls = 0;
 
 class FakeClient {
   constructor(config) {
@@ -19,32 +26,79 @@ class FakeClient {
     getPlayerStats: async (params) => {
       statsCalls++;
       lastStatsParams = params;
-      return { board: params.board_id, name: params.nameOnPlatform };
+      return {
+        platform_families_full_profiles: [],
+        board: params.board_id,
+        name: params.nameOnPlatform,
+      };
     },
     getIsBanned: async () => ({ isBanned: false }),
-    getSeasonalStats: async () => ({ history: { data: [] } }),
-    getOperatorStats: async () => ({ operators: [] }),
+    getSeasonalStats: async () => ({ data: { history: { data: [] } } }),
+    getOperatorStats: async () => {
+      opsCalls++;
+      const next = opsQueue.length ? opsQueue.shift() : { operators: [] };
+      if (next instanceof Error) throw next;
+      return next;
+    },
   };
 }
 
 mock.module("r6-data.js", () => ({ default: { R6Client: FakeClient }, R6Client: FakeClient }));
 
-process.env.CACHE_TTL_MIN = "15";
+// Fake the direct-Ubisoft library (r6api.js-next) so the real ubisoft provider
+// + adapter run end-to-end in the hybrid-routing tests, with no network.
+let ubiCalls = 0;
+let ubiFail = false;
+class FakeR6API {
+  constructor(opts) {
+    this.opts = opts;
+  }
+  findUserByUsername = async ({ platform, usernames }) => {
+    ubiCalls++;
+    if (ubiFail) throw new Error("DataDome block");
+    return [{ profileId: "pid", userId: "uid", username: usernames[0], platform, avatars: { 256: "a256" } }];
+  };
+  getUserProgression = async () => [{ profileId: "pid", level: 1480, xp: 0 }];
+  getUserSeasonal = async () => [
+    {
+      board: { slug: "pvp_ranked" },
+      season: { id: 41 },
+      rank: { id: 36, mmr: 4792 },
+      maxRank: { id: 36, mmr: 4857 },
+      kills: 1427,
+      deaths: 697,
+      wins: 167,
+      losses: 45,
+      abandons: 1,
+      matches: 213,
+    },
+  ];
+}
+mock.module("r6api.js-next", () => ({ default: FakeR6API, R6API: FakeR6API }));
+// Bind the ubisoft provider to the fake now, at load time. The provider's
+// `import R6API from "r6api.js-next"` is captured once on first eval; client.js
+// imports it lazily, which would otherwise happen after another file's
+// afterAll(mock.restore()) has wiped this mock.
+await import("../src/r6/providers/ubisoft.js");
 
-const {
-  accountInfo,
-  playerStats,
-  seasonalStats,
-  operatorStats,
-  isBanned,
-  settle,
-  TTL_RANKED_STATS,
-  TTL_SEASONAL_STATS,
-  TTL_BAN_STATUS,
-  TTL_ACCOUNT_INFO,
-  TTL_OPERATOR_STATS,
-} = await import("../src/r6/client.js");
-import { getDb } from "../src/db/index.js";
+// Unique query string so a whole-module mock of "../src/r6/client.js" in another
+// test file (commands.test.js) can't shadow the real implementation here.
+const { accountInfo, playerStats, operatorStats, settle, UPSTREAM_RETRIES } = await import(
+  "../src/r6/client.js?suite=client"
+);
+import { getBoard, rankedRecord } from "../src/r6/extract.js";
+
+// A second client instance evaluated with R6_PROVIDER=ubisoft, imported here at
+// load time (like the import above) so commands.test.js's whole-module mock of
+// client.js can't shadow it. Env is restored immediately so the rest of the
+// suite keeps the r6data default.
+process.env.UBI_EMAIL = "e";
+process.env.UBI_PASSWORD = "p";
+const origProvider = process.env.R6_PROVIDER;
+process.env.R6_PROVIDER = "ubisoft";
+const ubiClient = await import("../src/r6/client.js?suite=routing");
+if (origProvider === undefined) delete process.env.R6_PROVIDER;
+else process.env.R6_PROVIDER = origProvider;
 
 beforeAll(() => {
   process.env.R6DATA_API_KEY = "test-key";
@@ -53,42 +107,26 @@ beforeAll(() => {
 
 afterAll(() => mock.restore());
 
-describe("read-through cache", () => {
-  test("first call misses, second hits, no extra network", async () => {
+describe("always fetches live (no caching)", () => {
+  test("repeat calls always hit the upstream", async () => {
+    const start = accountCalls;
     const a = await accountInfo("Stompn.G2", "uplay");
-    expect(a.cached).toBe(false);
     expect(a.data.level).toBe(100);
-    expect(accountCalls).toBe(1);
+    expect(typeof a.fetchedAt).toBe("number");
 
-    const b = await accountInfo("Stompn.G2", "uplay");
-    expect(b.cached).toBe(true);
-    expect(accountCalls).toBe(1);
-  });
-
-  test("cache key is case-insensitive", async () => {
-    const c = await accountInfo("stompn.g2", "uplay");
-    expect(c.cached).toBe(true);
-    expect(accountCalls).toBe(1);
-  });
-
-  test("force bypasses the cache", async () => {
-    const d = await accountInfo("Stompn.G2", "uplay", { force: true });
-    expect(d.cached).toBe(false);
-    expect(accountCalls).toBe(2);
+    await accountInfo("Stompn.G2", "uplay");
+    await accountInfo("Stompn.G2", "uplay");
+    expect(accountCalls - start).toBe(3);
   });
 });
 
 describe("playerStats requests the ranked board", () => {
-  test("sends board_id ranked and caches", async () => {
+  test("sends board_id ranked", async () => {
+    const start = statsCalls;
     const a = await playerStats("Pengu", "uplay", "pc");
-    expect(a.cached).toBe(false);
     expect(lastStatsParams.board_id).toBe("ranked");
     expect(a.data.board).toBe("ranked");
-    expect(statsCalls).toBe(1);
-
-    const b = await playerStats("Pengu", "uplay", "pc");
-    expect(b.cached).toBe(true);
-    expect(statsCalls).toBe(1);
+    expect(statsCalls - start).toBe(1);
   });
 });
 
@@ -99,55 +137,84 @@ describe("settle", () => {
   });
 });
 
-describe("distinct cache TTLs per endpoint", () => {
-  test("writes varying expires_at based on endpoint custom TTLs", async () => {
-    // 1. accountInfo (7 days)
-    await accountInfo("ttl-acc", "uplay");
-    const accRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("account:uplay:ttl-acc");
-    expect(accRow.expires_at - accRow.fetched_at).toBe(TTL_ACCOUNT_INFO);
+describe("upstream inconsistency hardening", () => {
+  const good = {
+    operators: [{ operator: "Ash", side: "Attacker", roundsPlayed: 10, kills: 20, deaths: 10 }],
+  };
 
-    // 2. isBanned (24 hours)
-    await isBanned("ttl-ban", "uplay");
-    const banRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("ban:uplay:ttl-ban");
-    expect(banRow.expires_at - banRow.fetched_at).toBe(TTL_BAN_STATUS);
+  function script(queue) {
+    opsQueue = queue;
+    opsCalls = 0;
+  }
 
-    // 3. playerStats (15 mins)
-    await playerStats("ttl-stats", "uplay", "pc");
-    const statsRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("stats:uplay:pc:ranked:ttl-stats");
-    expect(statsRow.expires_at - statsRow.fetched_at).toBe(TTL_RANKED_STATS);
+  test("retries past a malformed response, then returns the good one", async () => {
+    script([{ error: "rate limited" }, good]); // first call junk, second good
+    const r = await operatorStats("retry-good", "uplay");
+    expect(r.data.operators).toHaveLength(1);
+    expect(opsCalls).toBe(2); // proves it retried past the junk
+  });
 
-    // 4. seasonalStats (15 mins)
-    await seasonalStats("ttl-seasonal", "uplay");
-    const seasonalRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("seasonal:uplay:ttl-seasonal");
-    expect(seasonalRow.expires_at - seasonalRow.fetched_at).toBe(TTL_SEASONAL_STATS);
+  test("when every attempt is junk it rejects (settle then yields null)", async () => {
+    script([{ bad: 1 }, { bad: 2 }, { bad: 3 }]); // all 3 attempts invalid
+    expect(await settle(operatorStats("all-junk", "uplay"))).toBeNull();
+    expect(opsCalls).toBe(UPSTREAM_RETRIES + 1);
+  });
 
-    // 5. operatorStats (7 days)
-    await operatorStats("ttl-ops", "uplay");
-    const opsRow = getDb().query("SELECT * FROM player_cache WHERE cache_key = ?").get("operators:uplay:ranked:ttl-ops");
-    expect(opsRow.expires_at - opsRow.fetched_at).toBe(TTL_OPERATOR_STATS);
+  test("an empty-but-valid payload is accepted on the first try", async () => {
+    script([{ operators: [] }]);
+    const r = await operatorStats("empty-valid", "uplay");
+    expect(r.data.operators).toEqual([]);
+    expect(opsCalls).toBe(1); // valid immediately, no wasted retries
+  });
+
+  test("a thrown upstream error is retried before giving up", async () => {
+    script([new Error("boom"), good]);
+    const r = await operatorStats("throw-retry", "uplay");
+    expect(r.data.operators).toHaveLength(1);
+    expect(opsCalls).toBe(2);
   });
 });
 
-describe("disabled cache (TTL = 0)", () => {
-  test("never hits cache, always calls API", async () => {
-    const origTtl = process.env.CACHE_TTL_MIN;
-    process.env.CACHE_TTL_MIN = "0";
+describe("hybrid routing (R6_PROVIDER=ubisoft)", () => {
+  const r6 = ubiClient;
 
-    const { accountInfo: accountInfoZero } = await import(
-      `../src/r6/client.js?nocache=${Date.now()}`
-    );
+  test("playerStats comes from Ubisoft, adapted into the r6data shape", async () => {
+    const startUbi = ubiCalls;
+    const startStats = statsCalls;
+    const res = await r6.playerStats("Stompn.G2", "uplay", "pc");
+    expect(ubiCalls).toBeGreaterThan(startUbi); // Ubisoft handled it
+    expect(statsCalls).toBe(startStats); // r6data was not hit
 
-    if (origTtl !== undefined) process.env.CACHE_TTL_MIN = origTtl;
-    else delete process.env.CACHE_TTL_MIN;
+    const rec = rankedRecord(getBoard(res.data, "ranked"));
+    expect(rec.rank).toBe(36);
+    expect(rec.rankPoints).toBe(4792);
+    expect(rec.wins).toBe(167);
+  });
 
-    const startCalls = accountCalls;
+  test("accountInfo comes from Ubisoft", async () => {
+    const startUbi = ubiCalls;
+    const startAcc = accountCalls;
+    const res = await r6.accountInfo("Stompn.G2", "uplay");
+    expect(ubiCalls).toBeGreaterThan(startUbi);
+    expect(accountCalls).toBe(startAcc);
+    expect(res.data.level).toBe(1480);
+    expect(res.data.profilePicture).toBe("a256");
+  });
 
-    const a = await accountInfoZero("Stompn.G2.Zero", "uplay");
-    expect(a.cached).toBe(false);
-    expect(accountCalls - startCalls).toBe(1);
+  test("operators stay on r6data even in ubisoft mode", async () => {
+    opsQueue = [];
+    const startOps = opsCalls;
+    await r6.operatorStats("Stompn.G2", "uplay");
+    expect(opsCalls).toBe(startOps + 1); // r6data FakeClient handled it
+  });
 
-    const b = await accountInfoZero("Stompn.G2.Zero", "uplay");
-    expect(b.cached).toBe(false);
-    expect(accountCalls - startCalls).toBe(2);
+  test("a failing Ubisoft call falls back to r6data", async () => {
+    ubiFail = true;
+    const startStats = statsCalls;
+    const res = await r6.playerStats("Stompn.G2", "uplay", "pc");
+    expect(statsCalls).toBe(startStats + 1); // fell back to r6data
+    // r6data FakeClient returns an empty board → unranked record, still valid.
+    expect(getBoard(res.data, "ranked")).toBeNull();
+    ubiFail = false;
   });
 });

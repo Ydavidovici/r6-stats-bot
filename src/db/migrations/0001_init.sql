@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS linked_accounts (
   linked_at         TEXT NOT NULL
 );
 
+-- Retained (unused) so caching can be re-enabled without a schema change. The
+-- request path fetches live; see src/r6/client.js.
 CREATE TABLE IF NOT EXISTS player_cache (
   cache_key    TEXT PRIMARY KEY,
   payload_json TEXT NOT NULL,

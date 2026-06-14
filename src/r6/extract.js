@@ -76,27 +76,23 @@ const TIERS = [
   { name: "Champion", color: "#d0073c", prefix: "champion" },
 ];
 
+const RANK_ICON_BASE = "https://r6data.com/assets/img/r6_ranks_img";
+
+// Ranked 3.0 (Operation System Override, 2026-06-02): 8 tiers × 5 divisions =
+// 40 ranks. Champion is now divisioned too (V–I, indices 36–40), where it used
+// to be a single rank at index 36. The general tier/division formula now covers
+// the whole ladder; there is no Champion special-case anymore.
 export function getTierFromRankIndex(rankIndex) {
   if (!rankIndex || rankIndex <= 0) {
-    return {
-      name: "Unranked",
-      color: "#a4a4a4",
-      icon: "https://r6data.com/assets/img/r6_ranks_img/unranked.webp",
-    };
+    return { name: "Unranked", color: "#a4a4a4", icon: `${RANK_ICON_BASE}/unranked.webp` };
   }
-  if (rankIndex >= 36) {
-    return {
-      name: "Champion",
-      color: "#d0073c",
-      icon: "https://r6data.com/assets/img/r6_ranks_img/champion.webp",
-    };
-  }
-  const tierIdx = Math.floor((rankIndex - 1) / 5) + 1;
-  const divIdx = 5 - ((rankIndex - 1) % 5);
+  const idx = Math.min(rankIndex, 40); // clamp; ladder tops out at Champion I (40)
+  const tierIdx = Math.floor((idx - 1) / 5) + 1; // 1 (Copper) .. 8 (Champion)
+  const divIdx = 5 - ((idx - 1) % 5); // 5 (V) .. 1 (I)
   const tier = TIERS[tierIdx];
   return {
     name: `${tier.name} ${divIdx}`,
     color: tier.color,
-    icon: `https://r6data.com/assets/img/r6_ranks_img/${tier.prefix}-${divIdx}.webp`,
+    icon: `${RANK_ICON_BASE}/${tier.prefix}-${divIdx}.webp`,
   };
 }

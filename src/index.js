@@ -11,6 +11,13 @@ if (!process.env.R6DATA_API_KEY) {
   console.error("R6DATA_API_KEY is not set in .env");
   process.exit(1);
 }
+if ((process.env.R6_PROVIDER || "").toLowerCase() === "ubisoft") {
+  if (!process.env.UBI_EMAIL || !process.env.UBI_PASSWORD) {
+    console.error("R6_PROVIDER=ubisoft requires UBI_EMAIL and UBI_PASSWORD in .env");
+    process.exit(1);
+  }
+  console.log("R6 provider: ubisoft (hybrid) — rank/RP/account from Ubisoft, rest from r6data.");
+}
 
 initDb(process.env.DB_PATH || "./data/r6bot.db");
 

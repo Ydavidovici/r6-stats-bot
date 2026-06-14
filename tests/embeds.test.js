@@ -5,6 +5,7 @@ import {
   buildOperatorsEmbed,
   buildSeasonalEmbed,
   buildBanEmbed,
+  sourcesText,
 } from "../src/embeds.js";
 import { wrap, fieldByName } from "./helpers.js";
 
@@ -117,6 +118,32 @@ describe("buildRankedEmbed", () => {
     expect(fieldByName(e, "K/D (season)").value).toContain("2.05");
     expect(fieldByName(e, "K/D (season)").value).toContain("1,427 / 697 (+730)");
     expect(fieldByName(e, "K/D (all-time)")).toBeUndefined();
+  });
+});
+
+describe("footer data source", () => {
+  const withSource = (file, source) => ({ ...wrap(file), source });
+
+  test("sourcesText dedupes and joins, headline first, defaults to r6data.com", () => {
+    expect(sourcesText({ source: "r6data" })).toBe("r6data.com");
+    expect(sourcesText({ source: "ubisoft" }, { source: "r6data" })).toBe("Ubisoft + r6data.com");
+    expect(sourcesText({ source: "ubisoft" }, { source: "ubisoft" })).toBe("Ubisoft");
+    expect(sourcesText(undefined, {})).toBe("r6data.com");
+  });
+
+  test("ranked footer credits r6data when that's the only source", () => {
+    const e = buildRankedEmbed(target, sources).toJSON();
+    expect(e.footer.text).toContain("via r6data.com");
+  });
+
+  test("hybrid ranked footer credits Ubisoft for rank + r6data for the rest", () => {
+    const e = buildRankedEmbed(target, {
+      stats: withSource("stats_ranked.json", "ubisoft"),
+      account: withSource("accountInfo.json", "ubisoft"),
+      seasonal: withSource("seasonalStats.json", "r6data"),
+      ops: withSource("operators_ranked.json", "r6data"),
+    }).toJSON();
+    expect(e.footer.text).toContain("via Ubisoft + r6data.com");
   });
 });
 

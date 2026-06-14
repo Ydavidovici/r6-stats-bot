@@ -28,6 +28,9 @@ export function deleteLink(discordUserId) {
     .run(discordUserId).changes;
 }
 
+// Caching is currently disabled — stats are fetched live (see src/r6/client.js).
+// These helpers and the player_cache table are kept dormant so caching can be
+// re-enabled later without a schema change.
 export function getCache(key) {
   const row = getDb()
     .query("SELECT * FROM player_cache WHERE cache_key = ?")

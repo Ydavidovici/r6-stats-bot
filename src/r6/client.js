@@ -1,96 +1,101 @@
-import pkg from "r6-data.js";
-import { getCache, setCache } from "../db/repo.js";
+// Provider-routing client. Every command goes through here; this layer picks a
+// data provider, validates and retries against an inconsistent upstream, and
+// (in hybrid mode) falls back between providers. The provider modules return
+// raw payloads in r6data's shape; the extractors/embeds never see the routing.
+import * as r6data from "./providers/r6data.js";
 
-const { R6Client } = pkg;
+const PROVIDER = (process.env.R6_PROVIDER || "r6data").toLowerCase();
 
-// r6data.com free tier is ~5k calls/month, so cache aggressively by default.
-// Set CACHE_TTL_MIN=0 in .env to disable caching entirely.
-const RANKED_TTL_MINUTES = process.env.CACHE_TTL_MIN !== undefined ? Number(process.env.CACHE_TTL_MIN) : 15;
+// The Ubisoft provider pulls in r6api.js-next + credentials; only load it when
+// it's actually selected, so the default path needs neither.
+let ubisoft = null;
+async function loadUbisoft() {
+  if (!ubisoft) ubisoft = await import("./providers/ubisoft.js");
+  return ubisoft;
+}
+const providers = { r6data: async () => r6data, ubisoft: loadUbisoft };
 
-export const TTL_RANKED_STATS = RANKED_TTL_MINUTES * 60 * 1000;
-export const TTL_SEASONAL_STATS = RANKED_TTL_MINUTES * 60 * 1000;
-export const TTL_BAN_STATUS = RANKED_TTL_MINUTES === 0 ? 0 : 24 * 60 * 60 * 1000;
-export const TTL_ACCOUNT_INFO = RANKED_TTL_MINUTES === 0 ? 0 : 7 * 24 * 60 * 60 * 1000;
-export const TTL_OPERATOR_STATS = RANKED_TTL_MINUTES === 0 ? 0 : 7 * 24 * 60 * 60 * 1000;
+// How many extra times to re-call a provider when it answers with an
+// empty/malformed payload. Third-party scrapers occasionally return junk; a
+// quick retry usually lands a good response.
+export const UPSTREAM_RETRIES = 2;
 
-let client = null;
-function getClient() {
-  if (!client) {
-    const apiKey = process.env.R6DATA_API_KEY;
-    if (!apiKey) throw new Error("R6DATA_API_KEY is not set in .env");
-    client = new R6Client({ apiKey });
+// Structural validators per endpoint. These reject null / error-shaped / HTML
+// payloads (the "incorrect data" the upstream sometimes returns) WITHOUT
+// rejecting legitimately-empty ones — e.g. a real player with no ranked games
+// returns an empty operators[] array, which is valid data we must keep.
+export const validators = {
+  account: (p) => Array.isArray(p?.profiles),
+  ban: (p) => typeof p?.isBanned === "boolean",
+  stats: (p) => Array.isArray(p?.platform_families_full_profiles),
+  seasonal: (p) => Array.isArray(p?.data?.history?.data),
+  operators: (p) => Array.isArray(p?.operators),
+};
+
+// Hybrid routing. Ubisoft only freshens what it can actually provide better:
+// the current ranked board (rank/RP/record) and account info. It has no RP
+// time-series and no rich operator/entry/clutch fields, so seasonal history,
+// operators and ban status stay on r6data. r6data is always the fallback.
+function chainFor(endpoint) {
+  if (PROVIDER === "ubisoft" && (endpoint === "playerStats" || endpoint === "accountInfo")) {
+    return ["ubisoft", "r6data"];
   }
-  return client;
+  return ["r6data"];
 }
 
-const norm = (s) => String(s).trim().toLowerCase();
-
-// Read-through cache. Returns { data, fetchedAt, cached }.
-async function cached(key, fetcher, ttlMs, { force = false } = {}) {
-  if (!force && ttlMs > 0) {
-    const hit = getCache(key);
-    if (hit) {
-      return { data: JSON.parse(hit.payload_json), fetchedAt: hit.fetched_at, cached: true };
+// Call one provider, retrying past invalid/throwing responses. Returns
+// { data, fetchedAt, source } or throws if it never produced a valid payload.
+async function callProvider(name, endpoint, args, validate) {
+  const provider = await providers[name]();
+  const fetcher = provider[endpoint];
+  if (typeof fetcher !== "function") {
+    throw new Error(`provider "${name}" has no "${endpoint}"`);
+  }
+  let lastErr = null;
+  for (let attempt = 0; attempt <= UPSTREAM_RETRIES; attempt++) {
+    try {
+      const data = await fetcher(...args);
+      if (!validate || validate(data)) return { data, fetchedAt: Date.now(), source: name };
+    } catch (err) {
+      lastErr = err;
     }
   }
-  const data = await fetcher();
-  const fetchedAt = Date.now();
-  if (ttlMs > 0) {
-    setCache(key, JSON.stringify(data), ttlMs);
+  if (lastErr) throw lastErr;
+  throw new Error(`${name}.${endpoint} returned no usable data`);
+}
+
+// Try each provider in the endpoint's chain; the first valid payload wins, so a
+// failing/blocked provider transparently falls back to the next.
+async function dispatch(endpoint, validate, args) {
+  let lastErr = null;
+  for (const name of chainFor(endpoint)) {
+    try {
+      return await callProvider(name, endpoint, args, validate);
+    } catch (err) {
+      lastErr = err;
+    }
   }
-  return { data, fetchedAt, cached: false };
+  throw lastErr ?? new Error(`no usable data for ${endpoint}`);
 }
 
-export function accountInfo(name, platformType, opts) {
-  return cached(
-    `account:${platformType}:${norm(name)}`,
-    () => getClient().players.getAccountInfo({ nameOnPlatform: name, platformType }),
-    TTL_ACCOUNT_INFO,
-    opts
-  );
+export function accountInfo(name, platformType) {
+  return dispatch("accountInfo", validators.account, [name, platformType]);
 }
 
-export function isBanned(name, platformType, opts) {
-  return cached(
-    `ban:${platformType}:${norm(name)}`,
-    () => getClient().players.getIsBanned({ nameOnPlatform: name, platformType }),
-    TTL_BAN_STATUS,
-    opts
-  );
+export function isBanned(name, platformType) {
+  return dispatch("isBanned", validators.ban, [name, platformType]);
 }
 
-// Ranked is our focus, so we fetch the ranked board specifically.
-export function playerStats(name, platformType, platformFamilies, { board = "ranked", ...opts } = {}) {
-  return cached(
-    `stats:${platformType}:${platformFamilies}:${board}:${norm(name)}`,
-    () =>
-      getClient().players.getPlayerStats({
-        nameOnPlatform: name,
-        platformType,
-        platform_families: platformFamilies,
-        board_id: board,
-      }),
-    TTL_RANKED_STATS,
-    opts
-  );
+export function playerStats(name, platformType, platformFamilies, { board = "ranked" } = {}) {
+  return dispatch("playerStats", validators.stats, [name, platformType, platformFamilies, board]);
 }
 
-export function seasonalStats(name, platformType, opts) {
-  return cached(
-    `seasonal:${platformType}:${norm(name)}`,
-    () => getClient().players.getSeasonalStats({ nameOnPlatform: name, platformType }),
-    TTL_SEASONAL_STATS,
-    opts
-  );
+export function seasonalStats(name, platformType) {
+  return dispatch("seasonalStats", validators.seasonal, [name, platformType]);
 }
 
-export function operatorStats(name, platformType, modes = "ranked", opts) {
-  return cached(
-    `operators:${platformType}:${modes}:${norm(name)}`,
-    () => getClient().players.getOperatorStats({ nameOnPlatform: name, platformType, modes }),
-    TTL_OPERATOR_STATS,
-    opts
-  );
+export function operatorStats(name, platformType, modes = "ranked") {
+  return dispatch("operatorStats", validators.operators, [name, platformType, modes]);
 }
 
 // Resolve a client promise to its value, or null on failure — so one failing
