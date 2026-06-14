@@ -72,6 +72,9 @@ async function dispatch(endpoint, validate, args) {
     try {
       return await callProvider(name, endpoint, args, validate);
     } catch (err) {
+      if (name !== "r6data") {
+        console.error(`[provider fallback] ${name}.${endpoint} failed:`, err.message || err);
+      }
       lastErr = err;
     }
   }
