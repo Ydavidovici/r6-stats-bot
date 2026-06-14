@@ -12,10 +12,12 @@
 //
 // Response normalization lives in ./ubisoft-adapt.js so it stays testable
 // without importing the library.
-import pkg from "r6api.js-next";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pkg = require("r6api.js-next");
 import { adaptStats, adaptAccount, pickRankedBoard } from "./ubisoft-adapt.js";
 
-const R6API = pkg?.default ?? pkg;
+const R6API = pkg.default || pkg;
 
 let api = null;
 function getApi() {
