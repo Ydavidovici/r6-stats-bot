@@ -6,7 +6,7 @@ import os from "node:os";
 
 // Configuration
 let API_ENDPOINT = process.env.BOT_API_URL || "http://localhost:3000/api/upload-replay";
-const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "dev-secret";
+let UPLOAD_SECRET = process.env.UPLOAD_SECRET || "dev-secret";
 
 const { values, positionals } = parseArgs({
     args: Bun.argv.slice(2),
@@ -19,6 +19,10 @@ const { values, positionals } = parseArgs({
         url: {
             type: "string",
             short: "u",
+        },
+        secret: {
+            type: "string",
+            short: "s",
         }
     },
     allowPositionals: true
@@ -26,6 +30,9 @@ const { values, positionals } = parseArgs({
 
 if (values.url) {
     API_ENDPOINT = values.url;
+}
+if (values.secret) {
+    UPLOAD_SECRET = values.secret;
 }
 
 if (positionals.length === 0) {
