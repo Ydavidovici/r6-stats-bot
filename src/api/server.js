@@ -5,7 +5,6 @@ import {mkdir, rm, writeFile} from "node:fs/promises";
 import {parseReplayData} from "../lib/replayParser.js";
 import {pushMatchToDbService} from "../db/dbServiceClient.js";
 import {$} from "bun";
-import { Dissect } from "r6-dissect";
 
 export function startApiServer(port = process.env.API_PORT || 3000) {
     const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "dev-secret";
@@ -50,16 +49,16 @@ export function startApiServer(port = process.env.API_PORT || 3000) {
                             file_data: Buffer.from(buffer).toString("base64"), // Store base64 for HTTP transfer
                         });
                     }
-
-                    // Run r6-dissect via the npm module
+                    // Run r6-dissect
+                    // r6-dissect <dir> outputs JSON
                     let dissectOutput;
                     try {
-                        const dissect = new Dissect();
-                        dissectOutput = await dissect.match(tempDir);
+                        const {stdout} = await $`r6-dissect ${tempDir}`.quiet();
+                        dissectOutput = JSON.parse(stdout.toString());
                     } catch (err) {
                         console.error("r6-dissect failed:", err);
                         await rm(tempDir, {recursive: true, force: true});
-                        return new Response("Replay parsing failed. Could not parse .rec files.", {status: 500});
+                        return new Response("Replay parsing failed. Is r6-dissect installed?", {status: 500});
                     }
 
                     // Parse the output

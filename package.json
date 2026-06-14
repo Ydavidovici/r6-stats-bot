@@ -13,7 +13,6 @@
     "discord.js": "^14.26.4",
     "jsonwebtoken": "^9.0.3",
     "r6-data.js": "^3.1.6",
-    "r6-dissect": "^2.0.2",
     "r6api.js-next": "^4.5.5"
   }
 }
