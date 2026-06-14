@@ -1,0 +1,12 @@
+{
+    "name": "r6-match-watcher",
+    "version": "1.0.0",
+    "description": "Watches local R6 match replay folder and uploads to bot",
+    "main": "index.js",
+    "scripts": {
+        "start": "bun run index.js"
+    },
+    "dependencies": {
+        "chokidar": "^3.6.0"
+    }
+}
