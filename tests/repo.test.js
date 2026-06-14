@@ -28,7 +28,9 @@ describe("linked_accounts", () => {
   });
 });
 
-describe("player_cache", () => {
+// player_cache is dormant (caching disabled, stats fetched live) but kept around
+// so caching can be re-enabled without a schema change — so we keep it covered.
+describe("player_cache (dormant)", () => {
   test("set then get fresh returns parseable payload", () => {
     setCache("k1", JSON.stringify({ x: 1 }), 60000);
     const row = getCache("k1");

@@ -1,17 +1,6 @@
 import pkg from "r6-data.js";
-import { getCache, setCache } from "../db/repo.js";
 
 const { R6Client } = pkg;
-
-// r6data.com free tier is ~5k calls/month, so cache aggressively by default.
-// Set CACHE_TTL_MIN=0 in .env to disable caching entirely.
-const RANKED_TTL_MINUTES = process.env.CACHE_TTL_MIN !== undefined ? Number(process.env.CACHE_TTL_MIN) : 15;
-
-export const TTL_RANKED_STATS = RANKED_TTL_MINUTES * 60 * 1000;
-export const TTL_SEASONAL_STATS = RANKED_TTL_MINUTES * 60 * 1000;
-export const TTL_BAN_STATUS = RANKED_TTL_MINUTES === 0 ? 0 : 24 * 60 * 60 * 1000;
-export const TTL_ACCOUNT_INFO = RANKED_TTL_MINUTES === 0 ? 0 : 7 * 24 * 60 * 60 * 1000;
-export const TTL_OPERATOR_STATS = RANKED_TTL_MINUTES === 0 ? 0 : 7 * 24 * 60 * 60 * 1000;
 
 let client = null;
 function getClient() {
@@ -23,46 +12,60 @@ function getClient() {
   return client;
 }
 
-const norm = (s) => String(s).trim().toLowerCase();
+// How many extra times to re-call the upstream when it answers with an
+// empty/malformed payload. r6data.com is an inconsistent third-party scraper and
+// occasionally returns junk; a quick retry usually lands a good response.
+export const UPSTREAM_RETRIES = 2;
 
-// Read-through cache. Returns { data, fetchedAt, cached }.
-async function cached(key, fetcher, ttlMs, { force = false } = {}) {
-  if (!force && ttlMs > 0) {
-    const hit = getCache(key);
-    if (hit) {
-      return { data: JSON.parse(hit.payload_json), fetchedAt: hit.fetched_at, cached: true };
+// Structural validators per endpoint. These reject null / error-shaped / HTML
+// payloads (the "incorrect data" the upstream sometimes returns) WITHOUT
+// rejecting legitimately-empty ones — e.g. a real player with no ranked games
+// returns an empty operators[] array, which is valid data we must keep.
+export const validators = {
+  account: (p) => Array.isArray(p?.profiles),
+  ban: (p) => typeof p?.isBanned === "boolean",
+  stats: (p) => Array.isArray(p?.platform_families_full_profiles),
+  seasonal: (p) => Array.isArray(p?.data?.history?.data),
+  operators: (p) => Array.isArray(p?.operators),
+};
+
+// Fetch live from the upstream every time — no caching, so results are always
+// current. Guards against r6data.com's inconsistency: retry past invalid/empty
+// responses, and never surface a structurally-broken payload. Returns
+// { data, fetchedAt }.
+async function fetchLive(fetcher, validate) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= UPSTREAM_RETRIES; attempt++) {
+    try {
+      const data = await fetcher();
+      if (!validate || validate(data)) {
+        return { data, fetchedAt: Date.now() };
+      }
+    } catch (err) {
+      lastErr = err;
     }
   }
-  const data = await fetcher();
-  const fetchedAt = Date.now();
-  if (ttlMs > 0) {
-    setCache(key, JSON.stringify(data), ttlMs);
-  }
-  return { data, fetchedAt, cached: false };
+  if (lastErr) throw lastErr;
+  throw new Error("r6data returned no usable data");
 }
 
-export function accountInfo(name, platformType, opts) {
-  return cached(
-    `account:${platformType}:${norm(name)}`,
+export function accountInfo(name, platformType) {
+  return fetchLive(
     () => getClient().players.getAccountInfo({ nameOnPlatform: name, platformType }),
-    TTL_ACCOUNT_INFO,
-    opts
+    validators.account
   );
 }
 
-export function isBanned(name, platformType, opts) {
-  return cached(
-    `ban:${platformType}:${norm(name)}`,
+export function isBanned(name, platformType) {
+  return fetchLive(
     () => getClient().players.getIsBanned({ nameOnPlatform: name, platformType }),
-    TTL_BAN_STATUS,
-    opts
+    validators.ban
   );
 }
 
 // Ranked is our focus, so we fetch the ranked board specifically.
-export function playerStats(name, platformType, platformFamilies, { board = "ranked", ...opts } = {}) {
-  return cached(
-    `stats:${platformType}:${platformFamilies}:${board}:${norm(name)}`,
+export function playerStats(name, platformType, platformFamilies, { board = "ranked" } = {}) {
+  return fetchLive(
     () =>
       getClient().players.getPlayerStats({
         nameOnPlatform: name,
@@ -70,26 +73,21 @@ export function playerStats(name, platformType, platformFamilies, { board = "ran
         platform_families: platformFamilies,
         board_id: board,
       }),
-    TTL_RANKED_STATS,
-    opts
+    validators.stats
   );
 }
 
-export function seasonalStats(name, platformType, opts) {
-  return cached(
-    `seasonal:${platformType}:${norm(name)}`,
+export function seasonalStats(name, platformType) {
+  return fetchLive(
     () => getClient().players.getSeasonalStats({ nameOnPlatform: name, platformType }),
-    TTL_SEASONAL_STATS,
-    opts
+    validators.seasonal
   );
 }
 
-export function operatorStats(name, platformType, modes = "ranked", opts) {
-  return cached(
-    `operators:${platformType}:${modes}:${norm(name)}`,
+export function operatorStats(name, platformType, modes = "ranked") {
+  return fetchLive(
     () => getClient().players.getOperatorStats({ nameOnPlatform: name, platformType, modes }),
-    TTL_OPERATOR_STATS,
-    opts
+    validators.operators
   );
 }
 
