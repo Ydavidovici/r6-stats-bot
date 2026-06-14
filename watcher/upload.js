@@ -2,9 +2,10 @@ import { join } from "node:path";
 import { readdir } from "node:fs/promises";
 import { existsSync, statSync } from "node:fs";
 import { parseArgs } from "node:util";
+import os from "node:os";
 
 // Configuration
-const API_ENDPOINT = process.env.BOT_API_URL || "http://localhost:3000/api/upload-replay";
+let API_ENDPOINT = process.env.BOT_API_URL || "http://localhost:3000/api/upload-replay";
 const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "dev-secret";
 
 const { values, positionals } = parseArgs({
@@ -14,17 +15,28 @@ const { values, positionals } = parseArgs({
             type: "string",
             short: "m",
             default: "tournament"
+        },
+        url: {
+            type: "string",
+            short: "u",
         }
     },
     allowPositionals: true
 });
 
+if (values.url) {
+    API_ENDPOINT = values.url;
+}
+
 if (positionals.length === 0) {
-    console.error("Usage: bun run upload.js [--mode <tournament|personal>] <path-to-match-folder>");
+    console.error("Usage: bun run upload.js [--mode <tournament|personal>] [--url <bot-api-url>] <path-to-match-folder>");
     process.exit(1);
 }
 
-const folderPath = positionals[0];
+let folderPath = positionals[0];
+if (folderPath.startsWith('~')) {
+    folderPath = join(os.homedir(), folderPath.slice(1));
+}
 const MATCH_MODE = values.mode;
 
 if (!existsSync(folderPath)) {
