@@ -5,6 +5,7 @@ import {mkdir, rm, writeFile} from "node:fs/promises";
 import {parseReplayData} from "../lib/replayParser.js";
 import {pushMatchToDbService} from "../db/dbServiceClient.js";
 import {$} from "bun";
+import { Dissect } from "r6-dissect";
 
 export function startApiServer(port = process.env.API_PORT || 3000) {
     const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "dev-secret";
