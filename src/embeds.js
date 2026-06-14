@@ -436,3 +436,273 @@ function trunc(s, n) {
   s = String(s);
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
+
+export function buildTournamentEmbed(stats, username, isRecent = false) {
+    const embed = new EmbedBuilder()
+        .setColor(0xFFA500) // Orange for Tournament
+        .setTitle(`🏆 Tournament Stats: ${stats.player_name}`)
+        .setDescription(isRecent ? "Stats from the most recent tournament match." : "Aggregated all-time tournament stats.");
+
+    const kdRatio = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+    const entryDiff = (stats.entry_kills - stats.entry_deaths) > 0 ? `+${stats.entry_kills - stats.entry_deaths}` : `${stats.entry_kills - stats.entry_deaths}`;
+    const kostPercent = stats.total_rounds > 0 ? Math.round((stats.rounds_with_kost / stats.total_rounds) * 100) : 0;
+
+    embed.addFields(
+        { name: "Matches Played", value: `${stats.matches_played}`, inline: true },
+        { name: "Avg EPS", value: `**${stats.avg_eps}**`, inline: true },
+        { name: "\u200B", value: "\u200B", inline: true }, // Spacer
+        { name: "K/D/A", value: `${stats.kills} / ${stats.deaths} / ${stats.assists} (${kdRatio})`, inline: true },
+        { name: "Entry (+/-)", value: `${stats.entry_kills} - ${stats.entry_deaths} (${entryDiff})`, inline: true },
+        { name: "KOST %", value: `${kostPercent}%`, inline: true },
+  valkyrie: { role: "Intel", side: "Defender" },
+  maestro: { role: "Intel", side: "Defender" },
+  echo: { role: "Intel", side: "Defender" },
+  solis: { role: "Intel", side: "Defender" },
+  lesion: { role: "Intel", side: "Defender" },
+  fenrir: { role: "Intel", side: "Defender" },
+  pulse: { role: "Intel", side: "Defender" },
+  mozzie: { role: "Intel", side: "Defender" },
+
+  // Defenders - Anchor
+  rook: { role: "Anchor", side: "Defender" },
+  doc: { role: "Anchor", side: "Defender" },
+  mira: { role: "Anchor", side: "Defender" },
+  kaid: { role: "Anchor", side: "Defender" },
+  bandit: { role: "Anchor", side: "Defender" },
+  mute: { role: "Anchor", side: "Defender" },
+  castle: { role: "Anchor", side: "Defender" },
+  clash: { role: "Anchor", side: "Defender" },
+  azami: { role: "Anchor", side: "Defender" },
+  aruni: { role: "Anchor", side: "Defender" },
+  tachanka: { role: "Anchor", side: "Defender" },
+  wamai: { role: "Anchor", side: "Defender" },
+  goyo: { role: "Anchor", side: "Defender" },
+  smoke: { role: "Anchor", side: "Defender" },
+  thunderbird: { role: "Anchor", side: "Defender" },
+  sentry: { role: "Anchor", side: "Defender" },
+  skopos: { role: "Anchor", side: "Defender" },
+  frost: { role: "Anchor", side: "Defender" },
+};
+
+function formatOperatorTable(operators) {
+  if (!operators || operators.length === 0) {
+    return "*No operators played*";
+  }
+  const header = "Operator        Rnd   K/D  HS%  Win%";
+  const rows = operators.map((o) => {
+    const op = (o.operator || "?").trim().padEnd(14).slice(0, 14);
+    const rnd = String(o.roundsPlayed || 0).padStart(5);
+    const kd = fmtKd(o.kd).padStart(5);
+    const hs = `${Math.round(o.headshotPercent || 0)}%`.padStart(4);
+    const win = `${Math.round(o.winPercent || 0)}%`.padStart(4);
+    return `${op}${rnd} ${kd} ${hs} ${win}`;
+  });
+  return "```\n" + header + "\n" + rows.join("\n") + "\n```";
+}
+
+export function buildOperatorsEmbed(target, { ops, account }, limit = 12) {
+  const acc = account?.data;
+  const agg = aggregateOperators(ops?.data);
+  if (!agg.hasData) return notFoundEmbed(target);
+
+  const name = playerName(target, acc);
+
+  const attackerEntry = [];
+  const attackerIntel = [];
+  const attackerSupport = [];
+  const defenderRoamer = [];
+  const defenderIntel = [];
+  const defenderAnchor = [];
+
+  for (const op of agg.topOperators) {
+    const opName = (op.operator || "").trim().toLowerCase();
+    const mapping = OPERATOR_ROLES[opName];
+    const side = op.side || mapping?.side;
+    let role = mapping?.role;
+
+    if (!role) {
+      if (side === "Attacker") role = "Entry";
+      else role = "Anchor";
+    }
+
+    if (side === "Attacker") {
+      if (role === "Entry" && attackerEntry.length < 3) attackerEntry.push(op);
+      else if (role === "Intel" && attackerIntel.length < 3) attackerIntel.push(op);
+      else if (role === "Support" && attackerSupport.length < 3) attackerSupport.push(op);
+    } else {
+      if (role === "Roamer" && defenderRoamer.length < 3) defenderRoamer.push(op);
+      else if (role === "Intel" && defenderIntel.length < 3) defenderIntel.push(op);
+      else if (role === "Anchor" && defenderAnchor.length < 3) defenderAnchor.push(op);
+    }
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(DEFAULT_COLOR)
+    .setAuthor({ name: `${name} — Top operators (ranked)`, iconURL: acc?.profilePicture || undefined });
+
+  embed.addFields(
+    { name: "⚔️ Attacker — Entry", value: formatOperatorTable(attackerEntry), inline: false },
+    { name: "⚔️ Attacker — Intel", value: formatOperatorTable(attackerIntel), inline: false },
+    { name: "⚔️ Attacker — Support", value: formatOperatorTable(attackerSupport), inline: false },
+    { name: "🛡️ Defender — Roamer", value: formatOperatorTable(defenderRoamer), inline: false },
+    { name: "🛡️ Defender — Intel", value: formatOperatorTable(defenderIntel), inline: false },
+    { name: "🛡️ Defender — Anchor", value: formatOperatorTable(defenderAnchor), inline: false }
+  );
+
+  if (acc?.profilePicture) embed.setThumbnail(acc.profilePicture);
+
+  return footer(embed, ops?.fetchedAt ?? Date.now(), sourcesText(ops, account));
+}
+
+export function buildSeasonalEmbed(target, { seasonal, account }) {
+  const acc = account?.data;
+  const series = rpSeries(seasonal?.data);
+  const tier = currentTier(seasonal?.data);
+  if (!series.length) return notFoundEmbed(target);
+
+  const name = playerName(target, acc);
+  const values = series.map((p) => p.value);
+  const current = values[values.length - 1];
+  const peak = Math.max(...values);
+  const low = Math.min(...values);
+  const net = current - values[0];
+
+  const embed = new EmbedBuilder()
+    .setColor(tier?.color || DEFAULT_COLOR)
+    .setAuthor({ name: `${name} — Rank points history`, iconURL: acc?.profilePicture || undefined })
+    .setDescription(`\`${sparkline(values)}\`\n_${values.length} recorded points_`)
+    .addFields(
+      { name: "Current", value: `${fmtNum(current)} RP`, inline: true },
+      { name: "Peak", value: `${fmtNum(peak)} RP`, inline: true },
+      { name: "Low", value: `${fmtNum(low)} RP`, inline: true },
+      { name: "Net change", value: `${signed(net)} RP`, inline: true }
+    );
+  if (tier?.icon) embed.setThumbnail(tier.icon);
+
+  return footer(embed, seasonal?.fetchedAt ?? Date.now(), sourcesText(seasonal, account));
+}
+
+export function buildBanEmbed(target, { ban, account }) {
+  const acc = account?.data;
+  const b = ban?.data;
+  const name = playerName(target, acc);
+  const banned = !!b?.isBanned;
+  const alerts = Array.isArray(b?.banAlerts) ? b.banAlerts : [];
+
+  const embed = new EmbedBuilder()
+    .setColor(banned ? DANGER_COLOR : SUCCESS_COLOR)
+    .setAuthor({ name: `${name} — Ban status`, iconURL: acc?.profilePicture || undefined })
+    .setDescription(banned ? "🔴 **Banned**" : "🟢 **Not banned**");
+
+  if (alerts.length) {
+    embed.addFields({
+      name: "Ban alerts",
+      value: alerts.map((a) => `• ${typeof a === "string" ? a : JSON.stringify(a)}`).join("\n").slice(0, 1024),
+    });
+  }
+
+  return footer(embed, ban?.fetchedAt ?? Date.now(), sourcesText(ban, account));
+}
+
+export function buildCompareEmbed(a, b) {
+  // a, b: { target, name, rec, tier, agg }
+  const metric = (label, va, vb) => `${label.padEnd(12)}${String(va).padEnd(13)}${vb}`;
+  const lines = [
+    metric("", trunc(a.name, 12), trunc(b.name, 12)),
+    metric("Rank", a.tier?.name || "Unranked", b.tier?.name || "Unranked"),
+    metric("RP", fmtNum(a.tier?.rankPoints || a.rec?.rankPoints || 0), fmtNum(b.tier?.rankPoints || b.rec?.rankPoints || 0)),
+    metric("Win%", fmtPct(a.rec?.winPct || 0), fmtPct(b.rec?.winPct || 0)),
+    metric("K/D", fmtKd(a.agg.total.kd), fmtKd(b.agg.total.kd)),
+    metric("HS%", fmtPct(a.agg.total.hsPercent), fmtPct(b.agg.total.hsPercent)),
+    metric("Entry +/-", signed(a.agg.total.entryDiff), signed(b.agg.total.entryDiff)),
+    metric("Clutch%", fmtPct(a.agg.total.clutchWinPercent), fmtPct(b.agg.total.clutchWinPercent)),
+  ];
+
+  const via = sourcesText(...(a.sources ?? []), ...(b.sources ?? []));
+  return new EmbedBuilder()
+    .setColor(DEFAULT_COLOR)
+    .setTitle("Head-to-head")
+    .setDescription("```\n" + lines.join("\n") + "\n```")
+    .setFooter({ text: `via ${via} • rank/RP current season, combat all-time ranked` })
+    .setTimestamp();
+}
+
+function trunc(s, n) {
+  s = String(s);
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+export function buildTournamentEmbed(stats, username, isRecent = false) {
+    const embed = new EmbedBuilder()
+        .setColor(0xFFA500) // Orange for Tournament
+        .setTitle(`🏆 Tournament Stats: ${stats.player_name}`)
+        .setDescription(isRecent ? "Stats from the most recent tournament match." : "Aggregated all-time tournament stats.");
+
+    const kdRatio = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+    const entryDiff = (stats.entry_kills - stats.entry_deaths) > 0 ? `+${stats.entry_kills - stats.entry_deaths}` : `${stats.entry_kills - stats.entry_deaths}`;
+    const kostPercent = stats.total_rounds > 0 ? Math.round((stats.rounds_with_kost / stats.total_rounds) * 100) : 0;
+
+    embed.addFields(
+        { name: "Matches Played", value: `${stats.matches_played}`, inline: true },
+        { name: "Avg EPS", value: `**${stats.avg_eps}**`, inline: true },
+        { name: "\u200B", value: "\u200B", inline: true }, // Spacer
+        { name: "K/D/A", value: `${stats.kills} / ${stats.deaths} / ${stats.assists} (${kdRatio})`, inline: true },
+        { name: "Entry (+/-)", value: `${stats.entry_kills} - ${stats.entry_deaths} (${entryDiff})`, inline: true },
+        { name: "KOST %", value: `${kostPercent}%`, inline: true },
+        { name: "Objective Plays", value: `${stats.objective_plays}`, inline: true },
+        { name: "Clutches", value: `${stats.clutches}`, inline: true },
+        { name: "Rounds Played", value: `${stats.total_rounds}`, inline: true }
+    );
+
+    return embed;
+}
+
+export function buildTournamentMatchEmbed(matchData) {
+    const { match, playerStats } = matchData;
+    
+    const embed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle(`🏆 Tournament Match Results`)
+        .setDescription(`Match played on <t:${Math.floor(new Date(match.created_at).getTime() / 1000)}:f>`);
+
+    // We can group players by team if team info was saved, but here we just list top players
+    let topPlayers = "";
+    for (let i = 0; i < Math.min(10, playerStats.length); i++) {
+        const p = playerStats[i];
+        const kd = `${p.kills}/${p.deaths}/${p.assists}`;
+        topPlayers += `**${i+1}. ${p.player_name}** - EPS: **${p.eps}** | K/D: ${kd} | KOST: ${p.rounds_with_kost}/${p.total_rounds}\n`;
+    }
+
+    if (topPlayers) {
+        embed.addFields({ name: "Scoreboard (Sorted by EPS)", value: topPlayers });
+    } else {
+        embed.addFields({ name: "Scoreboard", value: "No player stats found." });
+    }
+
+    return embed;
+}
+
+export function buildPersonalEmbed(stats, username, limit) {
+    const embed = new EmbedBuilder()
+        .setColor(0x3498DB) // Blue for Personal
+        .setTitle(`👤 Personal Stats: ${stats.player_name}`)
+        .setDescription(`Aggregated stats from the last **${stats.matches_played}** personal matches uploaded.`);
+
+    const kdRatio = stats.deaths > 0 ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+    const entryDiff = (stats.entry_kills - stats.entry_deaths) > 0 ? `+${stats.entry_kills - stats.entry_deaths}` : `${stats.entry_kills - stats.entry_deaths}`;
+    const kostPercent = stats.total_rounds > 0 ? Math.round((stats.rounds_with_kost / stats.total_rounds) * 100) : 0;
+
+    embed.addFields(
+        { name: "Matches Analyzed", value: `${stats.matches_played}`, inline: true },
+        { name: "Avg EPS", value: `**${stats.avg_eps}**`, inline: true },
+        { name: "\u200B", value: "\u200B", inline: true }, // Spacer
+        { name: "K/D/A", value: `${stats.kills} / ${stats.deaths} / ${stats.assists} (${kdRatio})`, inline: true },
+        { name: "Entry (+/-)", value: `${stats.entry_kills} - ${stats.entry_deaths} (${entryDiff})`, inline: true },
+        { name: "KOST %", value: `${kostPercent}%`, inline: true },
+        { name: "Objective Plays", value: `${stats.objective_plays}`, inline: true },
+        { name: "Clutches", value: `${stats.clutches}`, inline: true },
+        { name: "Rounds Played", value: `${stats.total_rounds}`, inline: true }
+    );
+
+    return embed;
+}

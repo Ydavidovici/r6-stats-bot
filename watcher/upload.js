@@ -1,19 +1,31 @@
 import { join } from "node:path";
 import { readdir } from "node:fs/promises";
 import { existsSync, statSync } from "node:fs";
+import { parseArgs } from "node:util";
 
 // Configuration
 const API_ENDPOINT = process.env.BOT_API_URL || "http://localhost:3000/api/upload-replay";
 const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "dev-secret";
-const MATCH_MODE = process.env.MODE || "tournament"; // Default to tournament for manual uploads
 
-const args = process.argv.slice(2);
-if (args.length === 0) {
-    console.error("Usage: bun run upload.js <path-to-match-folder>");
+const { values, positionals } = parseArgs({
+    args: Bun.argv.slice(2),
+    options: {
+        mode: {
+            type: "string",
+            short: "m",
+            default: "tournament"
+        }
+    },
+    allowPositionals: true
+});
+
+if (positionals.length === 0) {
+    console.error("Usage: bun run upload.js [--mode <tournament|personal>] <path-to-match-folder>");
     process.exit(1);
 }
 
-const folderPath = args[0];
+const folderPath = positionals[0];
+const MATCH_MODE = values.mode;
 
 if (!existsSync(folderPath)) {
     console.error(`Error: Directory does not exist: ${folderPath}`);

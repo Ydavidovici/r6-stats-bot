@@ -49,3 +49,86 @@ export async function pushMatchToDbService({match, rounds, playerStats, matchPla
         throw err;
     }
 }
+
+export async function getTournamentStats(username, isRecent = false) {
+    const dbServiceUrl = process.env.DB_SERVICE_URL || "http://localhost:4000";
+    const token = createServiceToken();
+
+    try {
+        const url = new URL(`${dbServiceUrl}/api/v1/r6stats/tournament/${encodeURIComponent(username)}`);
+        if (isRecent) url.searchParams.set("recent", "true");
+
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            const errBody = await response.text();
+            throw new Error(`Failed to fetch tournament stats: ${response.status} - ${errBody}`);
+        }
+
+        const data = await response.json();
+        return data.stats;
+    } catch (err) {
+        console.error("[dbServiceClient] getTournamentStats error:", err);
+        throw err;
+    }
+}
+
+export async function getRecentTournamentMatch() {
+    const dbServiceUrl = process.env.DB_SERVICE_URL || "http://localhost:4000";
+    const token = createServiceToken();
+
+    try {
+        const response = await fetch(`${dbServiceUrl}/api/v1/r6stats/tournament/match/recent`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            const errBody = await response.text();
+            throw new Error(`Failed to fetch recent tournament match: ${response.status} - ${errBody}`);
+        }
+
+        return await response.json();
+    } catch (err) {
+        console.error("[dbServiceClient] getRecentTournamentMatch error:", err);
+        throw err;
+    }
+}
+
+export async function getPersonalStats(username, limit = 10) {
+    const dbServiceUrl = process.env.DB_SERVICE_URL || "http://localhost:4000";
+    const token = createServiceToken();
+
+    try {
+        const url = new URL(`${dbServiceUrl}/api/v1/r6stats/personal/${encodeURIComponent(username)}`);
+        url.searchParams.set("limit", limit.toString());
+
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            const errBody = await response.text();
+            throw new Error(`Failed to fetch personal stats: ${response.status} - ${errBody}`);
+        }
+
+        const data = await response.json();
+        return data.stats;
+    } catch (err) {
+        console.error("[dbServiceClient] getPersonalStats error:", err);
+        throw err;
+    }
+}
