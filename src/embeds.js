@@ -23,6 +23,20 @@ function footer(embed, fetchedAt) {
   return embed.setFooter({ text: `via r6data.com • updated ${relTime(fetchedAt)}` }).setTimestamp();
 }
 
+// Resolve the tier to display. Rank name/division/colour come from the live
+// ranked-board index (freshest, and correct for Ranked 3.0's 40-rank ladder),
+// but the logo prefers r6data's own served icon so it tracks the new rank art
+// without us hardcoding every URL. Falls back to the seasonal tier when there's
+// no live ranked board.
+function resolveTier(rec, seasonalData) {
+  const seasonTier = currentTier(seasonalData);
+  if (rec && rec.rank > 0) {
+    const live = getTierFromRankIndex(rec.rank);
+    return { rankPoints: rec.rankPoints, ...live, icon: seasonTier?.icon ?? live.icon };
+  }
+  return seasonTier;
+}
+
 function notFoundEmbed(target) {
   return new EmbedBuilder()
     .setColor(DANGER_COLOR)
@@ -36,9 +50,7 @@ export function buildStatsEmbed(target, { stats, ops, seasonal, account }) {
   const acc = account?.data;
   const ranked = getBoard(stats?.data, "ranked");
   const rec = rankedRecord(ranked);
-  const tier = rec && rec.rank > 0
-    ? { rankPoints: rec.rankPoints, ...getTierFromRankIndex(rec.rank) }
-    : currentTier(seasonal?.data);
+  const tier = resolveTier(rec, seasonal?.data);
   const agg = aggregateOperators(ops?.data);
 
   if (!agg.hasData && !rec) return notFoundEmbed(target);
@@ -116,9 +128,7 @@ export function buildRankedEmbed(target, { stats, seasonal, ops, account }) {
   const acc = account?.data;
   const ranked = getBoard(stats?.data, "ranked");
   const rec = rankedRecord(ranked);
-  const tier = rec && rec.rank > 0
-    ? { rankPoints: rec.rankPoints, ...getTierFromRankIndex(rec.rank) }
-    : currentTier(seasonal?.data);
+  const tier = resolveTier(rec, seasonal?.data);
   const agg = aggregateOperators(ops?.data);
 
   if (!rec && !tier) return notFoundEmbed(target);
