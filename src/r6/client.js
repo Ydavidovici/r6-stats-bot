@@ -44,7 +44,7 @@ function chainFor(endpoint) {
 }
 
 // Call one provider, retrying past invalid/throwing responses. Returns
-// { data, fetchedAt } or throws if it never produced a valid payload.
+// { data, fetchedAt, source } or throws if it never produced a valid payload.
 async function callProvider(name, endpoint, args, validate) {
   const provider = await providers[name]();
   const fetcher = provider[endpoint];
@@ -55,7 +55,7 @@ async function callProvider(name, endpoint, args, validate) {
   for (let attempt = 0; attempt <= UPSTREAM_RETRIES; attempt++) {
     try {
       const data = await fetcher(...args);
-      if (!validate || validate(data)) return { data, fetchedAt: Date.now() };
+      if (!validate || validate(data)) return { data, fetchedAt: Date.now(), source: name };
     } catch (err) {
       lastErr = err;
     }
