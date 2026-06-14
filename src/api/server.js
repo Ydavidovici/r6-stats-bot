@@ -49,16 +49,16 @@ export function startApiServer(port = process.env.API_PORT || 3000) {
                             file_data: Buffer.from(buffer).toString("base64"), // Store base64 for HTTP transfer
                         });
                     }
-                    // Run r6-dissect
-                    // r6-dissect <dir> outputs JSON
+
+                    // Run r6-dissect via the npm module
                     let dissectOutput;
                     try {
-                        const {stdout} = await $`r6-dissect ${tempDir}`.quiet();
-                        dissectOutput = JSON.parse(stdout.toString());
+                        const dissect = new Dissect({ binaryPath: "/usr/local/lib/libr6dissect.so" });
+                        dissectOutput = await dissect.match(tempDir);
                     } catch (err) {
                         console.error("r6-dissect failed:", err);
                         await rm(tempDir, {recursive: true, force: true});
-                        return new Response("Replay parsing failed. Is r6-dissect installed?", {status: 500});
+                        return new Response("Replay parsing failed. Could not parse .rec files.", {status: 500});
                     }
 
                     // Parse the output
